@@ -1,0 +1,4 @@
+freezing-model
+envparse==0.2.0
+greenstalk==0.5.0
+stravalib>=0.7.0
