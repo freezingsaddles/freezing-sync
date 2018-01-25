@@ -422,7 +422,7 @@ class ActivitySync(BaseSync):
 
         sess = meta.session_factory()
 
-        api_ride_entries = self.list_rides(athlete=athlete, start_date=start, end_date=end,
+        api_ride_entries = self.list_rides(athlete=athlete, start_date=start_date, end_date=end_date,
                                            exclude_keywords=config.exclude_keywords)
 
         # Because MySQL doesn't like it and we are not storing tz info in the db.
