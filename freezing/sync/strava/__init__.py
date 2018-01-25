@@ -1,3 +1,5 @@
+import abc
+import logging
 from typing import Union
 
 from stravalib import Client
@@ -16,3 +18,18 @@ class StravaClientForAthlete(Client):
             athlete = meta.session_factory().query(Athlete).get(athlete)
         super(StravaClientForAthlete, self).__init__(access_token=athlete.access_token, rate_limit_requests=True)
 
+
+class BaseSync(metaclass=abc.ABCMeta):
+
+    @property
+    @abc.abstractmethod
+    def name(self):
+        pass
+
+    @property
+    @abc.abstractmethod
+    def description(self):
+        pass
+
+    def __init__(self, logger:logging.Logger = None):
+        self.logger = logger or logging.getLogger(__name__)

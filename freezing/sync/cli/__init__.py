@@ -4,12 +4,10 @@ import argparse
 
 from colorlog import ColoredFormatter
 
-from freezing.sync.cli.sync_details import SyncActivityDetails
 from freezing.sync.exc import CommandError
 
 
 class BaseCommand(metaclass=abc.ABCMeta):
-
     logger: logging.Logger = None
 
     @property
@@ -32,10 +30,10 @@ class BaseCommand(metaclass=abc.ABCMeta):
         log_g = parser.add_mutually_exclusive_group()
 
         log_g.add_argument("--debug", action="store_true", default=False,
-                            help="Whether to log at debug level.")
+                           help="Whether to log at debug level.")
 
         log_g.add_argument("--quiet", action="store_true", default=False,
-                          help="Whether to suppress non-error log output.")
+                           help="Whether to suppress non-error log output.")
 
         parser.add_argument("--color", action="store_true", default=False,
                             help="Whether to output logs with color.")
@@ -66,16 +64,16 @@ class BaseCommand(metaclass=abc.ABCMeta):
         if options.color:
 
             formatter = ColoredFormatter(
-                    "%(log_color)s%(levelname)-8s%(reset)s [%(name)s] %(message)s",
-                    datefmt=None,
-                    reset=True,
-                    log_colors={
-                        'DEBUG': 'cyan',
-                        'INFO': 'green',
-                        'WARNING': 'yellow',
-                        'ERROR': 'red',
-                        'CRITICAL': 'red',
-                    }
+                "%(log_color)s%(levelname)-8s%(reset)s [%(name)s] %(message)s",
+                datefmt=None,
+                reset=True,
+                log_colors={
+                    'DEBUG': 'cyan',
+                    'INFO': 'green',
+                    'WARNING': 'yellow',
+                    'ERROR': 'red',
+                    'CRITICAL': 'red',
+                }
             )
 
         else:
@@ -116,4 +114,3 @@ class BaseCommand(metaclass=abc.ABCMeta):
 
         :param args: The parsed options/args from argparse.
         """
-

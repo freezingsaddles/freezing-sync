@@ -1,5 +1,9 @@
 # hidden files
 .*
+# Local config files
+*.cfg
+
+/data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

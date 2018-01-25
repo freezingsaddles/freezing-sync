@@ -1,3 +1,6 @@
+class InvalidAuthorizationToken(RuntimeError):
+    pass
+
 
 class ConfigurationError(RuntimeError):
     pass
