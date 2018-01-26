@@ -15,7 +15,7 @@ class StravaClientForAthlete(Client):
 
     def __init__(self, athlete: Union[int, Athlete]):
         if not isinstance(athlete, Athlete):
-            athlete = meta.session_factory().query(Athlete).get(athlete)
+            athlete = meta.scoped_session().query(Athlete).get(athlete)
         super(StravaClientForAthlete, self).__init__(access_token=athlete.access_token, rate_limit_requests=True)
 
 

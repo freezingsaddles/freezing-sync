@@ -220,7 +220,7 @@ class ActivitySync(BaseSync):
     def sync_rides_detail(self, athlete_id: int = None, rewrite: bool = False, max_records: int = None,
                           use_cache: bool = True, only_cache: bool = False):
         
-        self.session = meta.session_factory()
+        self.session = meta.scoped_session()
         
         q = self.session.query(Ride)
         q = q.options(joinedload(Athlete))
@@ -346,7 +346,7 @@ class ActivitySync(BaseSync):
         :return: A tuple including the written Ride model object, whether to resync segment efforts, and whether to resync photos.
         :rtype: bafs.orm.Ride
         """
-        session = meta.session_factory()
+        session = meta.scoped_session()
         if activity.start_latlng:
             start_geo = WKTSpatialElement('POINT({lon} {lat})'.format(lat=activity.start_latlng.lat,
                                                                       lon=activity.start_latlng.lon))
@@ -420,7 +420,7 @@ class ActivitySync(BaseSync):
 
     def _sync_rides(self, start_date:datetime, end_date:datetime, athlete, rewrite:bool = False):
 
-        sess = meta.session_factory()
+        sess = meta.scoped_session()
 
         api_ride_entries = self.list_rides(athlete=athlete, start_date=start_date, end_date=end_date,
                                            exclude_keywords=config.exclude_keywords)
@@ -510,7 +510,7 @@ class ActivitySync(BaseSync):
     def sync_rides(self, start_date: datetime = None, end_date:datetime = None, rewrite:bool = False,
                    force: bool = False, athlete_id: int = None):
 
-        sess = meta.session_factory()
+        sess = meta.scoped_session()
 
         if start_date is None:
             start_date = config.start_date

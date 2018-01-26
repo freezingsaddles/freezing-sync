@@ -28,7 +28,7 @@ class ActivityStreamSync(BaseSync):
     def sync_streams(self, athlete_id: int = None, rewrite: bool = False, max_records: int = None,
                      use_cache: bool = True, only_cache: bool = False):
 
-        session = meta.session_factory()
+        session = meta.scoped_session()
 
         q = session.query(Ride)
 
@@ -76,7 +76,7 @@ class ActivityStreamSync(BaseSync):
         :param streams: The Strava streams.
         :param ride: The db model object for ride.
         """
-        session = meta.session_factory()
+        session = meta.scoped_session()
         try:
             streams_dict: Dict[str, Stream] = {s.type: s for s in streams}
 
