@@ -4,4 +4,5 @@ stravalib>=0.8.0
 PyMySQL==0.8.0
 polyline==1.3.2
 colorlog==3.1.0
--e git+https://github.com/freezingsaddles/freezing-model@0.1.1#egg=freezing-model
+-e git+https://github.com/freezingsaddles/freezing-model@0.2.0#egg=freezing-model
+APScheduler==3.5.1

@@ -16,29 +16,32 @@ from stravalib import model as sm
 from stravalib.unithelper import timedelta_to_seconds
 
 from freezing.model import meta
-from freezing.model.orm import Athlete, Ride, RideEffort, RidePhoto, RideError, RideGeo
+from freezing.model.orm import Athlete, Ride, RideEffort, RidePhoto, RideError, RideGeo, Team
 
 from freezing.sync.config import config
-from freezing.sync.exc import DataEntryError, CommandError, InvalidAuthorizationToken
+from freezing.sync.exc import DataEntryError, CommandError, InvalidAuthorizationToken, MultipleTeamsError, NoTeamsError
 
 from . import StravaClientForAthlete, BaseSync
 
 
-class ActivitySync(BaseSync):
+class AthleteSync(BaseSync):
+
+    name = 'sync-athletes'
+    description = 'Sync athletes.'
 
     def sync_athletes(self):
 
-        sess = meta.session_factory()
+        sess = meta.scoped_session()
 
         # We iterate over all of our athletes that have access tokens.  (We can't fetch anything
         # for those that don't.)
 
-        q = sess.query(model.Athlete)
-        q = q.filter(model.Athlete.access_token != None)
+        q = sess.query(Athlete)
+        q = q.filter(Athlete.access_token != None)
 
         for athlete in q.all():
             self.logger.info("Updating athlete: {0}".format(athlete))
-            c = data.StravaClientForAthlete(athlete)
+            c = StravaClientForAthlete(athlete)
             try:
                 strava_athlete = c.get_athlete()
                 self.register_athlete(strava_athlete, athlete.access_token)
@@ -56,7 +59,8 @@ class ActivitySync(BaseSync):
         :return: The added athlete model object.
         :rtype: :class:`bafs.model.Athlete`
         """
-        athlete = db.session.query(Athlete).get(strava_athlete.id)
+        session = meta.scoped_session()
+        athlete = session.query(Athlete).get(strava_athlete.id)
         if athlete is None:
             athlete = Athlete()
         athlete.id = strava_athlete.id
@@ -70,13 +74,12 @@ class ActivitySync(BaseSync):
         session.add(athlete)
         # We really shouldn't be committing here, since we want to disambiguate names after registering
 
-
         return athlete
 
-
     def disambiguate_athlete_display_names(self):
-        q = db.session.query(model.Athlete)
-        q = q.filter(model.Athlete.access_token != None)
+        session = meta.scoped_session()
+        q = session.query(Athlete)
+        q = q.filter(Athlete.access_token != None)
         athletes = q.all()
 
         # Ok, here is the plan; bin these things together based on firstname and last initial.
@@ -118,13 +121,13 @@ class ActivitySync(BaseSync):
             if required_length is not None:
                 for a in athletes:
                     fname, lname = firstlast(a.name)
-                    log.debug("Converting '{fname} {lname}' -> '{fname} {minlname}".format(fname=fname,
-                                                                                           lname=lname,
-                                                                                           minlname=lname[
-                                                                                                    :required_length]))
+                    self.logger.debug("Converting '{fname} {lname}' "
+                                      "-> '{fname} {minlname}".format(fname=fname,
+                                                                      lname=lname,
+                                                                      minlname=lname[:required_length]))
                     a.display_name = '{0} {1}'.format(fname, lname[:required_length])
             else:
-                log.debug("Unable to find a minimum lastname; using full lastname.")
+                self.logger.debug("Unable to find a minimum lastname; using full lastname.")
                 # Just use full names
                 for a in athletes:
                     fname, lname = firstlast(a.name)
@@ -144,24 +147,32 @@ class ActivitySync(BaseSync):
                                    the configured teams.  That won't work.
         :raise NoTeamsError: If no teams match.
         """
-        log.info("Checking {0!r} against {1!r}".format(strava_athlete.clubs, app.config['BAFS_TEAMS']))
-    
-        matches = [c for c in strava_athlete.clubs if c.id in app.config['BAFS_TEAMS']]
-        log.debug("Matched: {0!r}".format(matches))
-        athlete_model.team = None
-        if len(matches) > 1:
-            log.info("Multiple teams matcheed.")
-            raise MultipleTeamsError(matches)
-        elif len(matches) == 0:
-            raise NoTeamsError()
-        else:
-            club = matches[0]
-            # create the team row if it does not exist
-            team = db.session.query(Team).get(club.id)
-            if team is None:
-                team = Team()
-            team.id = club.id
-            team.name = club.name
-            athlete_model.team = team
-            db.session.add(team)
-            return team
+
+        all_teams = config.COMPETITION_TEAMS
+        self.logger.info("Checking {0!r} against {1!r}".format(strava_athlete.clubs, all_teams))
+        try:
+            matches = [c for c in strava_athlete.clubs if c.id in all_teams]
+            self.logger.debug("Matched: {0!r}".format(matches))
+            athlete_model.team = None
+            if len(matches) > 1:
+                # you can be on multiple teams as long as only one is an official team
+                matches = [c for c in matches if c.id not in config.OBSERVER_TEAMS]
+            if len(matches) > 1:
+                self.logger.info("Multiple teams matched for {}: {}".format(strava_athlete, matches))
+                raise MultipleTeamsError(matches)
+            elif len(matches) == 0:
+                raise NoTeamsError()
+            else:
+                club = matches[0]
+                # create the team row if it does not exist
+                team = meta.scoped_session().query(Team).get(club.id)
+                if team is None:
+                    team = Team()
+                team.id = club.id
+                team.name = club.name
+                team.leaderboard_exclude = club.id in config.OBSERVER_TEAMS
+                athlete_model.team = team
+                meta.scoped_session().add(team)
+                return team
+        finally:
+            meta.scoped_session().commit()

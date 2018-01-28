@@ -7,13 +7,13 @@ from sqlalchemy import and_
 from freezing.model import meta, orm
 
 from freezing.sync.config import config, init
-from freezing.sync.strava.activity import ActivitySync
+from freezing.sync.data.activity import ActivitySync
 from . import BaseCommand
 
 
 class SyncActivitiesScript(BaseCommand):
     """
-    Synchronize rides from strava with the database.
+    Synchronize rides from data with the database.
     """
     name = 'sync-activities'
     description = 'Syncs all activities for registered athletes.'

@@ -12,7 +12,7 @@ import functools
 import requests
 from datetime import datetime
 
-from weather.wunder.model import HistoryDay
+from .model import HistoryDay
 
 state_name_to_abbrev_map = {
     "Alabama": "AL",

@@ -47,7 +47,7 @@ class ActivitySync(BaseSync):
         ride.name = strava_activity.name
         ride.start_date = strava_activity.start_date_local
 
-        # We need to round so that "1.0" miles in strava is "1.0" miles when we convert back from meters.
+        # We need to round so that "1.0" miles in data is "1.0" miles when we convert back from meters.
         ride.distance = round(float(unithelper.miles(strava_activity.distance)), 3)
 
         ride.average_speed = float(unithelper.mph(strava_activity.average_speed))
@@ -154,7 +154,7 @@ class ActivitySync(BaseSync):
 
     def _write_strava_photo_primary(self, photo, ride):
         """
-        Writes a strava native (source=1) primary photo to db.
+        Writes a data native (source=1) primary photo to db.
 
         :param photo: The primary photo from an activity.
         :type photo: stravalib.orm.ActivityPhotoPrimary

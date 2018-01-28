@@ -28,7 +28,14 @@ setup(
     license='Apache',
     description='Freezing Saddles activity and metadata sync.',
     long_description=long_description,
-    packages=find_packages(),
+    packages=[
+        'freezing.sync',
+        'freezing.sync.cli',
+        'freezing.sync.data',
+        'freezing.sync.wx',
+        'freezing.sync.wx.wunder',
+        'freezing.sync.wx.ncdc'
+    ],
     # include_package_data=True,
     # package_data={'stravalib': ['tests/resources/*']},
     install_requires=reqs,

@@ -1,5 +1,5 @@
 from freezing.sync.cli import BaseCommand
-from freezing.sync.strava.streams import ActivityStreamSync
+from freezing.sync.data.streams import ActivityStreamSync
 
 
 class SyncActivityStreams(BaseCommand):

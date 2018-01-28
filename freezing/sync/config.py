@@ -1,76 +1,52 @@
+import os
 import logging
 from datetime import timedelta
 from typing import List
 
-from envparse import Env
+from envparse import env
 
 import arrow
 
 from freezing.model import init_model
 
-env = Env(
-    DEBUG=dict(cast=bool, default=False),
+envfile = os.environ.get('APP_SETTINGS', os.path.join(os.getcwd(), '.env'))
 
-    SQLALCHEMY_URL=str,
-
-    BEANSTALKD_HOST=dict(cast=str, default='beanstalkd.container'),
-    BEANSTALKD_PORT=dict(cast=int, default=11300),
-
-    STRAVA_CLIENT_ID=int,
-    STRAVA_CLIENT_SECRET=str,
-    STRAVA_ACTIVITY_CACHE_DIR=dict(cast=str, default='/data/cache/activities'),
-
-    WUNDERGROUND_API_KEY=str,
-    WUNDERGROUND_CACHE_DIR=dict(cast=str, default='/data/cache/weather'),
-
-    TEAMS=dict(cast=list, subcast=int, default=[]),
-    OBSERVER_TEAMS=dict(cast=list, subcast=int, default=[]),
-
-    START_DATE=str,
-    END_DATE=str,
-    UPLOAD_GRACE_PERIOD_DAYS=dict(cast=int, default=1),
-
-    EXCLUDE_KEYWORDS=dict(cast=list, subcast=str, default=['#NoBAFS']),
-)
+if os.path.exists(envfile):
+    env.read_envfile(envfile)
 
 
 class Config:
 
-    debug = env('DEBUG')  # type: bool
-    sqlalchemy_url = env('SQLALCHEMY_URL')
-    beanstalkd_host = env('BEANSTALKD_HOST')
-    beanstalkd_port = env('BEANSTALKD_PORT')
+    DEBUG = env('DEBUG')  # type: bool
+    SQLALCHEMY_URL = env('SQLALCHEMY_URL')
+    BEANSTALKD_HOST = env('BEANSTALKD_HOST', default='localhost')
+    BEANSTALKD_PORT = env('BEANSTALKD_PORT', cast=int, default=11300)
 
-    strava_client_id = env('STRAVA_CLIENT_ID')
-    strava_client_secret = env('STRAVA_CLIENT_SECRET')
-    strava_activity_cache_dir = env('STRAVA_ACTIVITY_CACHE_DIR')
-    strava_activity_cache_dir = env('STRAVA_ACTIVITY_CACHE_DIR')
+    STRAVA_CLIENT_ID = env('STRAVA_CLIENT_ID')
+    STRAVA_CLIENT_SECRET = env('STRAVA_CLIENT_SECRET')
+    STRAVA_ACTIVITY_CACHE_DIR = env('STRAVA_ACTIVITY_CACHE_DIR', default='/data/cache/activities')
 
-    wunderground_api_key = env('WUNDERGROUND_API_KEY')
-    wunderground_cache_dir = env('WUNDERGROUND_CACHE_DIR')
+    WUNDERGROUND_API_KEY = env('WUNDERGROUND_API_KEY')
+    WUNDERGROUND_CACHE_DIR = env('WUNDERGROUND_CACHE_DIR', default='/data/cache/weather')
 
-    # This may not be correct/sufficient for newer instagram api anyway ...
-    # instagram_client_id = env('INSTAGRAM_CLIENT_ID')
-    # instagram_cache_dir = env('INSTAGRAM_CACHE_DIR')
+    COMPETITION_TEAMS = env('TEAMS', cast=list, subcast=int, default=[])
+    OBSERVER_TEAMS = env('OBSERVER_TEAMS', cast=list, subcast=int, default=[])
 
-    competition_teams = env('TEAMS')
-    observer_teams = env('OBSERVER_TEAMS')
+    START_DATE = env('START_DATE', postprocessor=lambda val: arrow.get(val).datetime)
+    END_DATE = env('END_DATE', postprocessor=lambda val: arrow.get(val).datetime)
 
-    start_date = env('START_DATE', postprocessor=lambda val: arrow.get(val).datetime)
-    end_date = env('END_DATE', postprocessor=lambda val: arrow.get(val).datetime)
+    UPLOAD_GRACE_PERIOD:timedelta = env('UPLOAD_GRACE_PERIOD_DAYS', cast=int, default=1, postprocessor=lambda val: timedelta(days=val))
 
-    upload_grace_period:timedelta = env('UPLOAD_GRACE_PERIOD_DAYS', postprocessor=lambda val: timedelta(days=val))
-
-    exclude_keywords:List[str] = env('EXCLUDE_KEYWORDS')
+    EXCLUDE_KEYWORDS:List[str] = env('EXCLUDE_KEYWORDS', cast=list, subcast=str, default=['#NoBAFS'])
 
 
 config = Config()
 
 
 def init_logging():
-    logging.basicConfig(level=logging.DEBUG if config.debug else logging.INFO)
+    logging.basicConfig(level=logging.DEBUG if config.DEBUG else logging.INFO)
 
 
 def init():
     init_logging()
-    init_model(sqlalchemy_url=config.sqlalchemy_url)
+    init_model(sqlalchemy_url=config.SQLALCHEMY_URL)
