@@ -6,6 +6,7 @@ from typing import Dict, Any, List
 from geoalchemy import WKTSpatialElement
 from polyline.codec import PolylineCodec
 from sqlalchemy import update, or_, and_
+from sqlalchemy.orm import joinedload
 
 from freezing.sync.utils.cache import CachingStreamFetcher
 from stravalib.model import Activity, Stream
@@ -20,7 +21,7 @@ from freezing.sync.utils import wktutils
 from . import StravaClientForAthlete, BaseSync
 
 
-class ActivityStreamSync(BaseSync):
+class StreamSync(BaseSync):
 
     name = 'sync-activity-streams'
     description = 'Sync activity streams (GPS, etc.) JSON.'
@@ -30,7 +31,7 @@ class ActivityStreamSync(BaseSync):
 
         session = meta.scoped_session()
 
-        q = session.query(Ride)
+        q = session.query(Ride).options(joinedload(Ride.athlete))
 
         # We do not fetch streams for private rides.  Or manual rides (since there would be none).
         q = q.filter(and_(Ride.private == False,
@@ -54,7 +55,7 @@ class ActivityStreamSync(BaseSync):
         for ride in q:
             try:
                 client = StravaClientForAthlete(ride.athlete)
-                sf = CachingStreamFetcher(cache_basedir=config.strava_activity_cache_dir, client=client)
+                sf = CachingStreamFetcher(cache_basedir=config.STRAVA_ACTIVITY_CACHE_DIR, client=client)
                 streams = sf.fetch(athlete_id=ride.athlete_id,
                                    object_id=ride.id,
                                    use_cache=use_cache,
@@ -68,6 +69,32 @@ class ActivityStreamSync(BaseSync):
                 self.logger.exception(
                     "Error fetching/writing activity streams for {}, athlete {}".format(ride, ride.athlete))
                 session.rollback()
+
+    def fetch_and_store_activity_streams(self, *, athlete_id: int, activity_id:int, use_cache: bool = False):
+        session = meta.scoped_session()
+
+        self.logger.info("Fetching activity streams for athlete_id={}, activity_id={}".format(athlete_id, activity_id))
+
+        ride = session.query(Ride).options(joinedload(Ride.athlete)).get(activity_id)
+        if not ride:
+            raise RuntimeError("Cannot load streams before fetching activity.")
+
+        try:
+            client = StravaClientForAthlete(ride.athlete)
+            sf = CachingStreamFetcher(cache_basedir=config.STRAVA_ACTIVITY_CACHE_DIR, client=client)
+            streams = sf.fetch(athlete_id=athlete_id,
+                               object_id=activity_id,
+                               use_cache=use_cache,
+                               only_cache=False)
+            if streams:
+                self.write_ride_streams(streams, ride)
+                session.commit()
+            else:
+                self.logger.debug("No streams for {!r} (skipping)".format(ride))
+        except:
+            self.logger.exception(
+                "Error fetching/writing activity streams for {}, athlete {}".format(ride, ride.athlete))
+            raise
 
     def write_ride_streams(self, streams: List[Stream], ride: Ride):
         """

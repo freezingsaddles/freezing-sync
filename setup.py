@@ -47,13 +47,13 @@ setup(
     ],
     entry_points="""
     [console_scripts]
-    freezing-sync = freezing.sync.cli.sync_activities:main
+    freezing-sync = freezing.sync.run:main
+    freezing-sync-activities = freezing.sync.cli.sync_activities:main
     freezing-sync-detail = freezing.sync.cli.sync_details:main
     freezing-sync-streams = freezing.sync.cli.sync_streams:main
-    #freezing-sync-photos = freezing.sync.cli.sync_photos:main
-    #freezing-sync-weather = freezing.sync.cli.sync_ride_weather:main
-    #freezing-sync-athletes = freezing.sync.cli.sync_athletes:main
-    #freezing-fix-photo-urls = freezing.sync.cli.fix_photo_urls:main
+    freezing-sync-photos = freezing.sync.cli.sync_photos:main
+    freezing-sync-weather = freezing.sync.cli.sync_activity_weather:main
+    freezing-sync-athletes = freezing.sync.cli.sync_athletes:main
     """,
     zip_safe=True
 )

@@ -1,9 +1,9 @@
-from freezing.sync.data.weather import SyncRideWeather
+from freezing.sync.data.weather import WeatherSync
 
 from . import BaseCommand
 
 
-class SyncRideWeatherScript(BaseCommand):
+class SyncWeatherScript(BaseCommand):
     """
     Synchronize rides from data with the database.
     """
@@ -27,12 +27,12 @@ class SyncRideWeatherScript(BaseCommand):
         return parser
 
     def execute(self, args):
-        fetcher = SyncRideWeather(logger=self.logger)
+        fetcher = WeatherSync(logger=self.logger)
         fetcher.sync_weather(clear=args.clear, cache_only=args.cache_only, limit=args.limit)
 
 
 def main():
-    SyncRideWeatherScript().run()
+    SyncWeatherScript().run()
 
 
 if __name__ == '__main__':

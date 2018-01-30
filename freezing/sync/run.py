@@ -1,49 +1,79 @@
 import os
 import threading
 import enum
+from functools import partial
 from datetime import datetime
 
+import arrow
 from apscheduler.schedulers.background import BackgroundScheduler
 from greenstalk import Client, TimedOutError
 
+from freezing.model import init_model
 from freezing.model.msg.mq import DefinedTubes
 
-from freezing.sync.config import config, init
+from freezing.sync.config import config, init_logging
 from freezing.sync.autolog import log
-
-
-
-def tick():
-    print('Tick! The time is: %s' % datetime.now())
+# from freezing.sync.workflow import configured_publisher
+from freezing.sync.subscribe import ActivityUpdateSubscriber
+from freezing.sync.data.activity import ActivitySync
+from freezing.sync.data.weather import WeatherSync
+from freezing.sync.data.athlete import AthleteSync
 
 
 def main():
-    init()
+
+    init_logging()
+    init_model(config.SQLALCHEMY_URL)
 
     shutdown_event = threading.Event()
 
     scheduler = BackgroundScheduler()
-    scheduler.add_job(tick, 'interval', seconds=3)
+
+    # workflow_publisher = configured_publisher()
+
+    activity_sync = ActivitySync()
+    weather_sync = WeatherSync()
+    athlete_sync = AthleteSync()
+
+    # Every hour run a sync on the activities for athletes fall into the specified segment
+    # athlete_id % total_segments == segment
+    # (If this proves to be too many in one burst, we can space it into finer slices.)
+    def segmented_sync_activities():
+        activity_sync.sync_rides_distributed(total_segments=900, segment=arrow.now().hour)
+
+    scheduler.add_job(segmented_sync_activities, 'cron', minute='50')
+    scheduler.add_job(segmented_sync_activities, 'interval', seconds=2)
+
+    # Sync weather at 8am UTC
+    scheduler.add_job(weather_sync.sync_weather, 'cron', hour='8')
+
+    # Sync athletes once a day at 6am UTC
+    scheduler.add_job(athlete_sync.sync_athletes, 'cron', hour='6')
+
     scheduler.start()
 
     beanclient = Client(host=config.BEANSTALKD_HOST, port=config.BEANSTALKD_PORT,
                         watch=[DefinedTubes.activity_update.value])
 
+    subscriber = ActivityUpdateSubscriber(beanstalk_client=beanclient, shutdown_event=shutdown_event)
+
+    def shutdown_app():
+        shutdown_event.wait()
+        scheduler.shutdown()
+
+    shutdown_monitor = threading.Thread(target=shutdown_app)
+    shutdown_monitor.start()
+
     try:
         # This is here to simulate application activity (which keeps the main thread alive).
-        while not shutdown_event.is_set():
-            try:
-                message = beanclient.reserve(timeout=30)
-                log.info("Received message: {!r}".format(message))
-            except TimedOutError:
-                log.debug("Internal beanstalkdc connection timeout; reconnecting.")
-                pass
+        subscriber.run_forever()
     except (KeyboardInterrupt, SystemExit):
         log.info("Exiting on user request.")
     except:
         log.exception("Error running sync/listener.")
     finally:
-        scheduler.shutdown()
+        shutdown_event.set()
+        shutdown_monitor.join()
 
 
 if __name__ == '__main__':

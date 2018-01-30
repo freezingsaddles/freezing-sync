@@ -9,10 +9,10 @@ from freezing.sync.data import StravaClientForAthlete
 from . import BaseSync
 
 
-class PhotosSync(BaseSync):
+class PhotoSync(BaseSync):
 
     name = 'sync-photos'
-    description = 'Sync ride photos.'
+    description = 'Sync (non-primary) ride photos.'
 
     def sync_photos(self):
         sess = meta.scoped_session()

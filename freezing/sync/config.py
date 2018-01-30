@@ -3,6 +3,7 @@ import logging
 from datetime import timedelta
 from typing import List
 
+from colorlog import ColoredFormatter
 from envparse import env
 
 import arrow
@@ -43,10 +44,42 @@ class Config:
 config = Config()
 
 
-def init_logging():
-    logging.basicConfig(level=logging.DEBUG if config.DEBUG else logging.INFO)
+def init_logging(loglevel:int = logging.INFO, color: bool = False):
+    """
+    Initialize the logging subsystem and create a logger for this class, using passed in optparse options.
 
+    :param level: The log level (e.g. logging.DEBUG)
+    :return:
+    """
 
-def init():
-    init_logging()
-    init_model(sqlalchemy_url=config.SQLALCHEMY_URL)
+    ch = logging.StreamHandler()
+    ch.setLevel(loglevel)
+
+    if color:
+        formatter = ColoredFormatter(
+            "%(log_color)s%(levelname)-8s%(reset)s [%(name)s] %(message)s",
+            datefmt=None,
+            reset=True,
+            log_colors={
+                'DEBUG': 'cyan',
+                'INFO': 'green',
+                'WARNING': 'yellow',
+                'ERROR': 'red',
+                'CRITICAL': 'red',
+            }
+        )
+    else:
+        formatter = logging.Formatter("%(levelname)-8s [%(name)s] %(message)s")
+
+    ch.setFormatter(formatter)
+
+    loggers = [logging.getLogger('freezing'), logging.getLogger('stravalib'),
+               logging.getLogger('requests'), logging.root]
+
+    for l in loggers:
+        if l is logging.root:
+            l.setLevel(logging.DEBUG)
+        else:
+            l.setLevel(logging.INFO)
+        l.addHandler(ch)
+

@@ -1,4 +1,4 @@
-from freezing.sync.data.photos import PhotosSync
+from freezing.sync.data.photos import PhotoSync
 
 from . import BaseCommand
 
@@ -10,7 +10,7 @@ class SyncPhotosScript(BaseCommand):
 
     def execute(self, args):
 
-        fetcher = PhotosSync()
+        fetcher = PhotoSync()
         fetcher.sync_photos()
 
 

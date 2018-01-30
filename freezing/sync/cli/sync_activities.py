@@ -6,7 +6,7 @@ from sqlalchemy import and_
 
 from freezing.model import meta, orm
 
-from freezing.sync.config import config, init
+from freezing.sync.config import config
 from freezing.sync.data.activity import ActivitySync
 from . import BaseCommand
 
@@ -23,7 +23,7 @@ class SyncActivitiesScript(BaseCommand):
 
         parser.add_argument("--start-date", dest="start_date",
                             help="Date to begin fetching (default is to fetch all since configured start date)",
-                            default=config.start_date,
+                            default=config.START_DATE,
                             type=lambda v: arrow.get(v).date(),
                             metavar="YYYY-MM-DD")
 
@@ -41,13 +41,12 @@ class SyncActivitiesScript(BaseCommand):
 
     def execute(self, args):
 
-        fetcher = ActivitySync(logger=self.logger)
+        fetcher = ActivitySync(logger=self.logger, publisher=configured_activity_publisher())
         fetcher.sync_rides(start_date=args.start_date, athlete_id=args.athlete_id, rewrite=args.rewrite,
                            force=args.force)
 
 
 def main():
-    init()
     SyncActivitiesScript().run()
 
 

@@ -21,6 +21,13 @@ RUN pip3 install --upgrade pip setuptools wheel
 ADD requirements.txt /tmp/requirements.txt
 RUN pip3 wheel -r /tmp/requirements.txt --wheel-dir=/build/wheels
 
+# Now build the wheel for this project too.
+ADD . /app
+WORKDIR /app
+
+RUN python3.6 setup.py bdist_wheel -d /build/wheels
+
+
 # DEPLOY
 # =====
 
@@ -39,23 +46,13 @@ RUN apt-get update \
   && pip3 install --upgrade pip setuptools wheel \
   && rm -rf /var/lib/apt/lists/*
 
-
 RUN mkdir -p /data/cache/activities
 RUN mkdir -p /data/cache/weather
-RUN mkdir -p /data/cache/instagram
 
 VOLUME /data
-
-# Place app source in container.
-COPY . /app
-WORKDIR /app
 
 COPY --from=buildstep /build/wheels /tmp/wheels
 
 RUN pip3 install /tmp/wheels/*
 
-RUN python3.6 setup.py install
-
-EXPOSE 8000
-
-# ENTRYPOINT ?? Queue listener ?? Cron ??
+CMD freezing-sync

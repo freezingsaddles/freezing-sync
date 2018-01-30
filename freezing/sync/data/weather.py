@@ -14,7 +14,7 @@ from freezing.sync.config import config
 from freezing.sync.data import BaseSync
 
 
-class SyncRideWeather(BaseSync):
+class WeatherSync(BaseSync):
     """
     Synchronize rides from data with the database.
     """
@@ -41,7 +41,7 @@ class SyncRideWeather(BaseSync):
             join ride_geo G on G.ride_id = R.id
             left join ride_weather W on W.ride_id = R.id
             where W.ride_id is null
-            and date(R.start_date) < CURDATE()
+            and date(R.start_date) < CURDATE() -- Only include rides from yesterday 
             and time(R.start_date) != '00:00:00' -- Exclude bad entries.
             ;
             """)

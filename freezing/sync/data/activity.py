@@ -1,12 +1,12 @@
 import logging
 import re
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 
 import arrow
 from geoalchemy import WKTSpatialElement
 
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 from sqlalchemy.orm import joinedload
 
 from freezing.sync.utils.cache import CachingActivityFetcher
@@ -92,10 +92,11 @@ class ActivitySync(BaseSync):
         :param strava_activity: The :class:`stravalib.orm.Activity` that is associated with this effort.
         :param ride: The db model object for ride.
         """
+        session = meta.scoped_session()
 
         try:
             # Start by removing any existing segments for the ride.
-            self.session.execute(RideEffort.__table__.delete().where(RideEffort.ride_id == strava_activity.id))
+            session.execute(RideEffort.__table__.delete().where(RideEffort.ride_id == strava_activity.id))
 
             # Then add them back in
             for se in strava_activity.segment_efforts:
@@ -108,8 +109,8 @@ class ActivitySync(BaseSync):
                 self.logger.debug("Writing ride effort: {se_id}: {effort!r}".format(se_id=se.id,
                                                                             effort=effort.segment_name))
 
-                self.session.add(effort)
-                self.session.flush()
+                session.add(effort)
+                session.flush()
 
             ride.efforts_fetched = True
 
@@ -117,7 +118,7 @@ class ActivitySync(BaseSync):
             self.logger.exception("Error adding effort for ride: {0}".format(ride))
             raise
 
-    def _write_instagram_photo_primary(self, photo:ActivityPhotoPrimary, ride: Ride) -> RidePhoto:
+    def _make_photo_from_instagram(self, photo:ActivityPhotoPrimary, ride: Ride) -> Optional[RidePhoto]:
         """
         Writes an instagram primary photo to db.
 
@@ -147,21 +148,15 @@ class ActivitySync(BaseSync):
 
         self.logger.debug("Writing (primary) Instagram ride photo: {!r}".format(p))
 
-        self.session.add(p)
-        self.session.flush()
-
         return p
 
-    def _write_strava_photo_primary(self, photo, ride):
+    def _make_photo_from_native(self, photo: ActivityPhotoPrimary, ride: Ride) -> Optional[RidePhoto]:
         """
         Writes a data native (source=1) primary photo to db.
 
         :param photo: The primary photo from an activity.
-        :type photo: stravalib.orm.ActivityPhotoPrimary
         :param ride: The db model object for ride.
-        :type ride: bafs.orm.Ride
         :return: The newly added ride photo object.
-        :rtype: bafs.orm.RidePhoto
         """
         # 'photos': {u'count': 1,
         #   u'primary': {u'id': None,
@@ -184,10 +179,8 @@ class ActivitySync(BaseSync):
         p.img_t = photo.urls['100']
         p.ride_id = ride.id
 
-        self.logger.debug("Writing (primary) Strava ride photo: {}".format(p))
+        self.logger.debug("Creating (primary) native ride photo: {}".format(p))
 
-        self.session.add(p)
-        self.session.flush()
         return p
     
     def write_ride_photo_primary(self, strava_activity: Activity, ride: Ride):
@@ -200,6 +193,8 @@ class ActivitySync(BaseSync):
         :param ride: The db model object for ride.
         :type ride: bafs.orm.Ride
         """
+        session = meta.scoped_session()
+
         # If we have > 1 instagram photo, then we don't do anything.
         if strava_activity.photo_count > 1:
             self.logger.debug("Ignoring basic sync for {} since there are > 1 instagram photos.")
@@ -213,17 +208,19 @@ class ActivitySync(BaseSync):
 
         if primary_photo:
             if primary_photo.source == 1:
-                self._write_strava_photo_primary(primary_photo, ride)
+                p = self._make_photo_from_native(primary_photo, ride)
             else:
-                self._write_instagram_photo_primary(primary_photo, ride)
+                p = self._make_photo_from_instagram(primary_photo, ride)
+            session.add(p)
+            session.flush()
 
     def sync_rides_detail(self, athlete_id: int = None, rewrite: bool = False, max_records: int = None,
                           use_cache: bool = True, only_cache: bool = False):
         
-        self.session = meta.scoped_session()
+        session = meta.scoped_session()
         
-        q = self.session.query(Ride)
-        q = q.options(joinedload(Athlete))
+        q = session.query(Ride)
+        q = q.options(joinedload(Ride.athlete))
 
         # TODO: Construct a more complex query to catch photos_fetched=False, track_fetched=False, etc.
         q = q.filter(Ride.private==False)
@@ -247,18 +244,54 @@ class ActivitySync(BaseSync):
             try:
                 client = StravaClientForAthlete(ride.athlete)
 
-                af = CachingActivityFetcher(cache_basedir=config.strava_activity_cache_dir, client=client)
+                af = CachingActivityFetcher(cache_basedir=config.STRAVA_ACTIVITY_CACHE_DIR, client=client)
 
                 strava_activity = af.fetch(athlete_id=ride.athlete_id, object_id=ride.id,
                                            use_cache=use_cache, only_cache=only_cache)
 
                 self.update_ride_complete(strava_activity=strava_activity, ride=ride)
 
-                self.session.commit()
+                session.commit()
 
             except:
                 self.logger.exception("Error fetching/writing activity detail {}, athlete {}".format(ride.id, ride.athlete))
-                self.session.rollback()
+                session.rollback()
+
+    def delete_activity(self, *, athlete_id: int, activity_id: int):
+        session = meta.scoped_session()
+        ride = session.query(Ride).filter(Ride.id == activity_id).filter(Ride.athlete_id == athlete_id).one_or_none()
+        if ride:
+            session.delete(ride)
+            session.commit()
+        else:
+            self.logger.warning("Unable to find ride {} for athlete {} to remove.".format(activity_id, athlete_id))
+
+    def fetch_and_store_actvitiy_detail(self, *, athlete_id: int, activity_id:int, use_cache: bool = False):
+
+        session = meta.scoped_session()
+
+        self.logger.info("Fetching detailed activity athlete_id={}, activity_id={}".format(athlete_id, activity_id))
+
+        athlete = session.query(Athlete).get(athlete_id)
+
+        try:
+            client = StravaClientForAthlete(athlete)
+
+            af = CachingActivityFetcher(cache_basedir=config.STRAVA_ACTIVITY_CACHE_DIR, client=client)
+
+            strava_activity = af.fetch(athlete_id=athlete_id, object_id=activity_id,
+                                       use_cache=use_cache)
+
+            ride = self.write_ride(strava_activity)
+            self.update_ride_complete(strava_activity=strava_activity, ride=ride)
+
+            session.commit()
+
+        except:
+            self.logger.exception(
+                "Error fetching/writing activity detail {}, athlete {}".format(ride.id, ride.athlete))
+            session.rollback()
+            raise
 
     def update_ride_complete(self, strava_activity: Activity, ride: Ride):
         """
@@ -267,13 +300,15 @@ class ActivitySync(BaseSync):
         :param strava_activity: The Activity that has been populated from detailed fetch.
         :param ride: The database ride object to update.
         """
+        session = meta.scoped_session()
+
         # We do this just to take advantage of the use-cache/only-cache feature for reprocessing activities.
         self.update_ride_basic(strava_activity=strava_activity, ride=ride)
-        self.session.flush()
+        session.flush()
         try:
             self.logger.info("Writing out efforts for {!r}".format(ride))
             self.write_ride_efforts(strava_activity, ride)
-            self.session.flush()
+            session.flush()
         except:
             self.logger.error("Error writing efforts for activity {0}, athlete {1}".format(ride.id, ride.athlete),
                               exc_info=self.logger.isEnabledFor(logging.DEBUG))
@@ -423,7 +458,7 @@ class ActivitySync(BaseSync):
         sess = meta.scoped_session()
 
         api_ride_entries = self.list_rides(athlete=athlete, start_date=start_date, end_date=end_date,
-                                           exclude_keywords=config.exclude_keywords)
+                                           exclude_keywords=config.EXCLUDE_KEYWORDS)
 
         # Because MySQL doesn't like it and we are not storing tz info in the db.
         start_notz = start_date.replace(tzinfo=None)
@@ -440,6 +475,9 @@ class ActivitySync(BaseSync):
         removed_ride_ids = list(stored_ride_ids - returned_ride_ids)
 
         num_rides = len(api_ride_entries)
+
+        ride_ids_needing_detail = []
+        ride_ids_needing_streams = []
 
         for (i, strava_activity) in enumerate(api_ride_entries):
             self.logger.debug("Processing ride: {0} ({1}/{2})".format(strava_activity.id, i + 1, num_rides))
@@ -479,7 +517,6 @@ class ActivitySync(BaseSync):
                     except:
                         self.logger.exception("Error adding ride-error entry.")
                 else:
-                    sess.commit()
                     try:
                         # If there is an error entry, then we should remove it.
                         q = sess.query(RideError)
@@ -490,6 +527,13 @@ class ActivitySync(BaseSync):
                         sess.commit()
                     except:
                         self.logger.exception("Error maybe-clearing ride-error entry.")
+
+                    if ride.detail_fetched is False:
+                        ride_ids_needing_detail.append(ride.id)
+
+                    if ride.track_fetched is False:
+                        ride_ids_needing_streams.append(ride.id)
+
             else:
                 self.logger.info("[SKIPPED EXISTING]: {id} {name!r} ({i}/{num}) ".format(id=strava_activity.id,
                                                                                          name=strava_activity.name,
@@ -507,22 +551,42 @@ class ActivitySync(BaseSync):
 
         sess.commit()
 
+    def sync_rides_distributed(self, total_segments: int, segment: int, start_date: datetime = None,
+                               end_date:datetime = None):
+        """
+
+        :param total_segments: The number of segments to divide athletes into (e.g. 24 if this is being run hourly)
+        :param segment: Which segment (0-based) to select.
+        :param start_date: Will default to competition start.
+        :param end_date: Will default to competition end.
+        """
+
+        sess = meta.scoped_session()
+
+        q = sess.query(Athlete)
+        q = q.filter(Athlete.access_token != None)
+        q = q.filter(func.mod(Athlete.id, total_segments) == segment)
+        athletes: List[Athlete] = q.all()
+        self.logger.info("Selecting segment {} / {}, found {} athletes".format(segment, total_segments, len(athletes)))
+        athlete_ids = [a.id for a in athletes]
+        return self.sync_rides(start_date=start_date, end_date=end_date, athlete_ids=athlete_ids)
+
     def sync_rides(self, start_date: datetime = None, end_date:datetime = None, rewrite:bool = False,
-                   force: bool = False, athlete_id: int = None):
+                   force: bool = False, athlete_ids: List[int] = None):
 
         sess = meta.scoped_session()
 
         if start_date is None:
-            start_date = config.start_date
+            start_date = config.START_DATE
 
         if end_date is None:
-            end_date = config.end_date
+            end_date = config.END_DATE
 
         self.logger.info("Fetching rides newer than {} and older than {}".format(start_date, end_date))
 
-        if (arrow.now() > (end_date + config.upload_grace_period)) and not force:
+        if (arrow.now() > (end_date + config.UPLOAD_GRACE_PERIOD)) and not force:
             raise CommandError("Current time is after competition end date + grace "
-                               "period, not syncing rides. (Use --force to override.)")
+                               "period, not syncing rides. (Use `force` to override.)")
 
         if rewrite:
             self.logger.info("Rewriting existing ride data.")
@@ -532,8 +596,8 @@ class ActivitySync(BaseSync):
         q = sess.query(Athlete)
         q = q.filter(Athlete.access_token != None)
 
-        if athlete_id:
-            q = q.filter(Athlete.id == athlete_id)
+        if athlete_ids:
+            q = q.filter(Athlete.id.in_(athlete_ids))
 
         # Also only fetch athletes that have teams configured.  This may not be strictly necessary
         # but this is a team competition, so not a lot of value in pulling in data for those
@@ -551,5 +615,4 @@ class ActivitySync(BaseSync):
                 self.logger.error("Invalid authorization token for {} (removing)".format(athlete))
                 athlete.access_token = None
                 sess.add(athlete)
-
-        sess.commit()
+                sess.commit()

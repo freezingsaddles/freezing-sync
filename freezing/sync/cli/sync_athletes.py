@@ -13,17 +13,22 @@ class SyncAthletesScript(BaseCommand):
     membership are kept in sync w/ Strava.)
     """
 
-    @property
-    def description(self) -> str:
-        return 'Sync all athletes.'
+    name = 'sync-athletes'
 
-    @property
-    def name(self):
-        return 'sync-athletes'
+    description = 'Sync all athletes.'
+
+    def build_parser(self):
+        parser = super().build_parser()
+
+        parser.add_argument("--max-records", type=int,
+                            help="Limit number of rides to return.",
+                            metavar="NUM")
+
+        return parser
 
     def execute(self, args):
         fetcher = AthleteSync(logger=self.logger)
-        fetcher.sync_athletes()
+        fetcher.sync_athletes(max_records=args.max_records)
 
 
 def main():

@@ -4,6 +4,8 @@ import argparse
 
 from colorlog import ColoredFormatter
 
+from freezing.model import init_model
+from freezing.sync.config import config, init_logging
 from freezing.sync.exc import CommandError
 
 
@@ -58,38 +60,7 @@ class BaseCommand(metaclass=abc.ABCMeta):
         else:
             loglevel = logging.INFO
 
-        ch = logging.StreamHandler()
-        ch.setLevel(loglevel)
-
-        if options.color:
-
-            formatter = ColoredFormatter(
-                "%(log_color)s%(levelname)-8s%(reset)s [%(name)s] %(message)s",
-                datefmt=None,
-                reset=True,
-                log_colors={
-                    'DEBUG': 'cyan',
-                    'INFO': 'green',
-                    'WARNING': 'yellow',
-                    'ERROR': 'red',
-                    'CRITICAL': 'red',
-                }
-            )
-
-        else:
-            formatter = logging.Formatter("%(levelname)-8s [%(name)s] %(message)s")
-
-        ch.setFormatter(formatter)
-
-        loggers = [logging.getLogger('freezing'), logging.getLogger('stravalib'),
-                   logging.getLogger('requests'), logging.root]
-
-        for l in loggers:
-            if l is logging.root:
-                l.setLevel(logging.DEBUG)
-            else:
-                l.setLevel(logging.INFO)
-            l.addHandler(ch)
+        init_logging(loglevel=loglevel, color=options.color)
 
         self.logger = logging.getLogger(self.name)
 
@@ -101,6 +72,8 @@ class BaseCommand(metaclass=abc.ABCMeta):
         args = parser.parse_args(argv)
 
         self.init_logging(args)
+        init_model(sqlalchemy_url=config.SQLALCHEMY_URL)
+
         try:
             self.execute(args)
         except CommandError as ce:

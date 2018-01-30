@@ -29,7 +29,7 @@ class AthleteSync(BaseSync):
     name = 'sync-athletes'
     description = 'Sync athletes.'
 
-    def sync_athletes(self):
+    def sync_athletes(self, max_records: int = None):
 
         sess = meta.scoped_session()
 
@@ -38,6 +38,9 @@ class AthleteSync(BaseSync):
 
         q = sess.query(Athlete)
         q = q.filter(Athlete.access_token != None)
+        if max_records:
+            self.logger.info("Limiting to {} records.".format(max_records))
+            q = q.limit(max_records)
 
         for athlete in q.all():
             self.logger.info("Updating athlete: {0}".format(athlete))

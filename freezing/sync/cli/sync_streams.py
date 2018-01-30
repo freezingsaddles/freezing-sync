@@ -1,5 +1,5 @@
 from freezing.sync.cli import BaseCommand
-from freezing.sync.data.streams import ActivityStreamSync
+from freezing.sync.data.streams import StreamSync
 
 
 class SyncActivityStreams(BaseCommand):
@@ -28,7 +28,7 @@ class SyncActivityStreams(BaseCommand):
         return parser
 
     def execute(self, args):
-        fetcher = ActivityStreamSync(logger=self.logger)
+        fetcher = StreamSync(logger=self.logger)
         fetcher.sync_streams(athlete_id=args.athlete_id, rewrite=args.rewrite, use_cache=args.use_cache,
                              only_cache=args.only_cache, max_records=args.max_records)
 
