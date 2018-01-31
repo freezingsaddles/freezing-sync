@@ -32,6 +32,7 @@ setup(
         'freezing.sync',
         'freezing.sync.cli',
         'freezing.sync.data',
+        'freezing.sync.utils',
         'freezing.sync.wx',
         'freezing.sync.wx.wunder',
         'freezing.sync.wx.ncdc'
