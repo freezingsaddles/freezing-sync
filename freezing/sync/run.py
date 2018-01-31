@@ -37,12 +37,12 @@ def main():
 
     # Every hour run a sync on the activities for athletes fall into the specified segment
     # athlete_id % total_segments == segment
-    # (If this proves to be too many in one burst, we can space it into finer slices.)
+    # TODO: Probably it would be more prudent to split into 15-minute segments, to match rate limits
+    # Admittedly that will make the time-based segment calculation a little trickier.
     def segmented_sync_activities():
         activity_sync.sync_rides_distributed(total_segments=24, segment=arrow.now().hour)
 
     scheduler.add_job(segmented_sync_activities, 'cron', minute='50')
-    scheduler.add_job(segmented_sync_activities, 'interval', seconds=2)
 
     # Sync weather at 8am UTC
     scheduler.add_job(weather_sync.sync_weather, 'cron', hour='8')
