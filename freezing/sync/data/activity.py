@@ -569,7 +569,8 @@ class ActivitySync(BaseSync):
         athletes: List[Athlete] = q.all()
         self.logger.info("Selecting segment {} / {}, found {} athletes".format(segment, total_segments, len(athletes)))
         athlete_ids = [a.id for a in athletes]
-        return self.sync_rides(start_date=start_date, end_date=end_date, athlete_ids=athlete_ids)
+        if athlete_ids:
+            return self.sync_rides(start_date=start_date, end_date=end_date, athlete_ids=athlete_ids)
 
     def sync_rides(self, start_date: datetime = None, end_date:datetime = None, rewrite:bool = False,
                    force: bool = False, athlete_ids: List[int] = None):
@@ -596,7 +597,7 @@ class ActivitySync(BaseSync):
         q = sess.query(Athlete)
         q = q.filter(Athlete.access_token != None)
 
-        if athlete_ids:
+        if athlete_ids is not None:
             q = q.filter(Athlete.id.in_(athlete_ids))
 
         # Also only fetch athletes that have teams configured.  This may not be strictly necessary

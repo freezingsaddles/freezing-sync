@@ -39,7 +39,7 @@ def main():
     # athlete_id % total_segments == segment
     # (If this proves to be too many in one burst, we can space it into finer slices.)
     def segmented_sync_activities():
-        activity_sync.sync_rides_distributed(total_segments=900, segment=arrow.now().hour)
+        activity_sync.sync_rides_distributed(total_segments=24, segment=arrow.now().hour)
 
     scheduler.add_job(segmented_sync_activities, 'cron', minute='50')
     scheduler.add_job(segmented_sync_activities, 'interval', seconds=2)
