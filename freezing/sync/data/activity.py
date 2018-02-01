@@ -535,10 +535,10 @@ class ActivitySync(BaseSync):
                         ride_ids_needing_streams.append(ride.id)
 
             else:
-                self.logger.info("[SKIPPED EXISTING]: {id} {name!r} ({i}/{num}) ".format(id=strava_activity.id,
-                                                                                         name=strava_activity.name,
-                                                                                         i=i + 1,
-                                                                                         num=num_rides))
+                self.logger.debug("[SKIPPED EXISTING]: {id} {name!r} ({i}/{num}) ".format(id=strava_activity.id,
+                                                                                          name=strava_activity.name,
+                                                                                          i=i + 1,
+                                                                                          num=num_rides))
 
         # Remove any rides that are in the database for this athlete that were not in the returned list.
         if removed_ride_ids:
@@ -547,7 +547,7 @@ class ActivitySync(BaseSync):
             deleted = q.delete(synchronize_session=False)
             self.logger.info("Removed {0} no longer present rides for athlete {1}.".format(deleted, athlete))
         else:
-            self.logger.info("(No removed rides for athlete {0}.)".format(athlete))
+            self.logger.debug("(No removed rides for athlete {0}.)".format(athlete))
 
         sess.commit()
 
@@ -583,7 +583,7 @@ class ActivitySync(BaseSync):
         if end_date is None:
             end_date = config.END_DATE
 
-        self.logger.info("Fetching rides newer than {} and older than {}".format(start_date, end_date))
+        self.logger.debug("Fetching rides newer than {} and older than {}".format(start_date, end_date))
 
         if (arrow.now() > (end_date + config.UPLOAD_GRACE_PERIOD)) and not force:
             raise CommandError("Current time is after competition end date + grace "

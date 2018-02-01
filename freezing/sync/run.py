@@ -44,6 +44,9 @@ def main():
 
     scheduler.add_job(segmented_sync_activities, 'cron', minute='50')
 
+    # This should generally not pick up anytihng.
+    scheduler.add_job(activity_sync.sync_rides_detail, 'cron', minute='20')
+
     # Sync weather at 8am UTC
     scheduler.add_job(weather_sync.sync_weather, 'cron', hour='8')
 
