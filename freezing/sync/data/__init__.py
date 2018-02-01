@@ -14,8 +14,11 @@ class StravaClientForAthlete(Client):
     """
 
     def __init__(self, athlete: Union[int, Athlete]):
+        assert athlete, "No athlete ID or Athlete object provided."
         if not isinstance(athlete, Athlete):
             athlete = meta.scoped_session().query(Athlete).get(athlete)
+            if not athlete:
+                raise ValueError("Athlete ID does not exist in database: {}".format(athlete_id))
         super(StravaClientForAthlete, self).__init__(access_token=athlete.access_token, rate_limit_requests=True)
 
 

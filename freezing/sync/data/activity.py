@@ -272,21 +272,24 @@ class ActivitySync(BaseSync):
 
         self.logger.info("Fetching detailed activity athlete_id={}, activity_id={}".format(athlete_id, activity_id))
 
-        athlete = session.query(Athlete).get(athlete_id)
-
         try:
-            client = StravaClientForAthlete(athlete)
 
-            af = CachingActivityFetcher(cache_basedir=config.STRAVA_ACTIVITY_CACHE_DIR, client=client)
+            athlete = session.query(Athlete).get(athlete_id)
+            if not athlete:
+                self.logger.warning("Athlete {} not found in database, ignoring activity {}".format(athlete_id, activity_id))
+                return  # Makes the else a little unnecessary, but reads easier.
+            else:
+                client = StravaClientForAthlete(athlete)
 
-            strava_activity = af.fetch(athlete_id=athlete_id, object_id=activity_id,
-                                       use_cache=use_cache)
+                af = CachingActivityFetcher(cache_basedir=config.STRAVA_ACTIVITY_CACHE_DIR, client=client)
 
-            ride = self.write_ride(strava_activity)
-            self.update_ride_complete(strava_activity=strava_activity, ride=ride)
+                strava_activity = af.fetch(athlete_id=athlete_id, object_id=activity_id,
+                                           use_cache=use_cache)
 
-            session.commit()
+                ride = self.write_ride(strava_activity)
+                self.update_ride_complete(strava_activity=strava_activity, ride=ride)
 
+                session.commit()
         except:
             self.logger.exception(
                 "Error fetching/writing activity detail {}, athlete {}".format(activity_id, athlete_id))
