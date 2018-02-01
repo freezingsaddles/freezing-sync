@@ -20,7 +20,6 @@ class CachingAthleteObjectFetcher(metaclass=abc.ABCMeta):
 
     def __init__(self, cache_basedir: str, client: Client):
         assert cache_basedir, "No cache_basedir provided."
-        assert os.path.exists(cache_basedir), "{} directory does not exist".format(cache_basedir)
         self.logger = logging.getLogger('{0.__module__}.{0.__name__}'.format(self.__class__))
         self.cache_basedir = cache_basedir
         self.client = client

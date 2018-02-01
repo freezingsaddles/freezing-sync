@@ -182,7 +182,7 @@ class ActivitySync(BaseSync):
         self.logger.debug("Creating (primary) native ride photo: {}".format(p))
 
         return p
-    
+
     def write_ride_photo_primary(self, strava_activity: Activity, ride: Ride):
         """
         Store primary photo for activity from the main detail-level activity.
@@ -216,9 +216,9 @@ class ActivitySync(BaseSync):
 
     def sync_rides_detail(self, athlete_id: int = None, rewrite: bool = False, max_records: int = None,
                           use_cache: bool = True, only_cache: bool = False):
-        
+
         session = meta.scoped_session()
-        
+
         q = session.query(Ride)
         q = q.options(joinedload(Ride.athlete))
 
@@ -289,7 +289,7 @@ class ActivitySync(BaseSync):
 
         except:
             self.logger.exception(
-                "Error fetching/writing activity detail {}, athlete {}".format(ride.id, ride.athlete))
+                "Error fetching/writing activity detail {}, athlete {}".format(activity_id, athlete_id))
             session.rollback()
             raise
 
