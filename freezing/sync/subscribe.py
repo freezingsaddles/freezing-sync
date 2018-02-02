@@ -11,6 +11,7 @@ from freezing.model.orm import Athlete
 from freezing.sync.autolog import log
 from freezing.sync.data.activity import ActivitySync
 from freezing.sync.data.streams import StreamSync
+from freezing.sync.exc import ActivityNotFound
 from stravalib.exc import ObjectNotFound
 
 
@@ -34,21 +35,23 @@ class ActivityUpdateSubscriber:
                                     "ignoring activity update message {}".format(message.athlete_id,
                                                                                  message))
                 return  # Makes the else a little unnecessary, but reads easier.
+            try:
+                if message.operation is AspectType.delete:
+                    self.activity_sync.delete_activity(athlete_id=message.athlete_id,
+                                                       activity_id=message.activity_id)
 
-            if message.operation is AspectType.delete:
-                self.activity_sync.delete_activity(athlete_id=message.athlete_id,
-                                                   activity_id=message.activity_id)
+                elif message.operation is AspectType.update:
+                    self.activity_sync.fetch_and_store_actvitiy_detail(athlete_id=message.athlete_id,
+                                                                       activity_id=message.activity_id)
+                    # (We'll assume the stream doens't need re-fetching.)
 
-            elif message.operation is AspectType.update:
-                self.activity_sync.fetch_and_store_actvitiy_detail(athlete_id=message.athlete_id,
-                                                                   activity_id=message.activity_id)
-                # (We'll assume the stream doens't need re-fetching.)
-
-            elif message.operation is AspectType.create:
-                self.activity_sync.fetch_and_store_actvitiy_detail(athlete_id=message.athlete_id,
-                                                                   activity_id=message.activity_id)
-                self.streams_sync.fetch_and_store_activity_streams(athlete_id=message.athlete_id,
-                                                                   activity_id=message.activity_id)
+                elif message.operation is AspectType.create:
+                    self.activity_sync.fetch_and_store_actvitiy_detail(athlete_id=message.athlete_id,
+                                                                       activity_id=message.activity_id)
+                    self.streams_sync.fetch_and_store_activity_streams(athlete_id=message.athlete_id,
+                                                                       activity_id=message.activity_id)
+            except ActivityNotFound as x:
+                log.error(str(x))
 
     def run_forever(self):
         # This is expecting to run in the main thread. Needs a bit of redesign

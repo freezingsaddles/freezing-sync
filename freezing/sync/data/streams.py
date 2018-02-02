@@ -16,7 +16,7 @@ from freezing.model import meta
 from freezing.model.orm import Athlete, Ride, RideTrack
 
 from freezing.sync.config import config
-from freezing.sync.exc import ConfigurationError
+from freezing.sync.exc import ConfigurationError, ActivityNotFound
 from freezing.sync.utils import wktutils
 
 from . import StravaClientForAthlete, BaseSync
@@ -93,7 +93,7 @@ class StreamSync(BaseSync):
             else:
                 self.logger.debug("No streams for {!r} (skipping)".format(ride))
         except ObjectNotFound:
-            self.logger.warning("Streams not found for {}, athlete {}".format(ride, ride.athlete))
+            raise ActivityNotFound("Streams not found for {}, athlete {}".format(ride, ride.athlete))
         except:
             self.logger.exception(
                 "Error fetching/writing activity streams for {}, athlete {}".format(ride, ride.athlete))

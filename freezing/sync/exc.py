@@ -22,3 +22,6 @@ class CommandError(RuntimeError):
 class DataEntryError(ValueError):
     pass
 
+
+class ActivityNotFound(RuntimeError):
+    pass

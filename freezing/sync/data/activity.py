@@ -20,7 +20,7 @@ from freezing.model import meta
 from freezing.model.orm import Athlete, Ride, RideEffort, RidePhoto, RideError, RideGeo
 
 from freezing.sync.config import config
-from freezing.sync.exc import DataEntryError, CommandError, InvalidAuthorizationToken
+from freezing.sync.exc import DataEntryError, CommandError, InvalidAuthorizationToken, ActivityNotFound
 
 from . import StravaClientForAthlete, BaseSync
 
@@ -289,7 +289,7 @@ class ActivitySync(BaseSync):
                     ride = self.write_ride(strava_activity)
                     self.update_ride_complete(strava_activity=strava_activity, ride=ride)
             except ObjectNotFound:
-                self.logger.warning("Activity {} not found, ignoring.".format(activity_id))
+                raise ActivityNotFound("Activity {} not found, ignoring.".format(activity_id))
             except:
                 self.logger.exception("Error fetching/writing activity "
                                       "detail {}, athlete {}".format(activity_id, athlete_id))
