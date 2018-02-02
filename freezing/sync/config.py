@@ -51,7 +51,6 @@ def init_logging(loglevel:int = logging.INFO, color: bool = False):
     :param level: The log level (e.g. logging.DEBUG)
     :return:
     """
-
     ch = logging.StreamHandler()
     ch.setLevel(loglevel)
 
@@ -76,10 +75,11 @@ def init_logging(loglevel:int = logging.INFO, color: bool = False):
     loggers = [logging.getLogger('freezing'), logging.getLogger('stravalib'),
                logging.getLogger('requests'), logging.root]
 
+    logging.root.addHandler(ch)
+
     for l in loggers:
         if l is logging.root:
             l.setLevel(logging.DEBUG)
         else:
             l.setLevel(logging.INFO)
-        l.addHandler(ch)
 
