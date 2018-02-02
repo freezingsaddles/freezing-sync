@@ -9,6 +9,7 @@ from sqlalchemy import update, or_, and_
 from sqlalchemy.orm import joinedload
 
 from freezing.sync.utils.cache import CachingStreamFetcher
+from stravalib.exc import ObjectNotFound
 from stravalib.model import Activity, Stream
 
 from freezing.model import meta
@@ -91,6 +92,8 @@ class StreamSync(BaseSync):
                 session.commit()
             else:
                 self.logger.debug("No streams for {!r} (skipping)".format(ride))
+        except ObjectNotFound:
+            self.logger.warning("Streams not found for {}, athlete {}".format(ride, ride.athlete))
         except:
             self.logger.exception(
                 "Error fetching/writing activity streams for {}, athlete {}".format(ride, ride.athlete))
