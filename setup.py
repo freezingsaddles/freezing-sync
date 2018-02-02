@@ -53,7 +53,7 @@ setup(
     freezing-sync-detail = freezing.sync.cli.sync_details:main
     freezing-sync-streams = freezing.sync.cli.sync_streams:main
     freezing-sync-photos = freezing.sync.cli.sync_photos:main
-    freezing-sync-weather = freezing.sync.cli.sync_activity_weather:main
+    freezing-sync-weather = freezing.sync.cli.sync_weather:main
     freezing-sync-athletes = freezing.sync.cli.sync_athletes:main
     """,
     zip_safe=True
