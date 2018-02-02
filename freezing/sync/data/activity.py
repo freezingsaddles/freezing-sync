@@ -11,6 +11,7 @@ from sqlalchemy.orm import joinedload
 
 from freezing.sync.utils.cache import CachingActivityFetcher
 from stravalib import unithelper
+from stravalib.exc import ObjectNotFound
 
 from stravalib.model import Activity, ActivityPhotoPrimary
 from stravalib.unithelper import timedelta_to_seconds
@@ -268,33 +269,31 @@ class ActivitySync(BaseSync):
 
     def fetch_and_store_actvitiy_detail(self, *, athlete_id: int, activity_id:int, use_cache: bool = False):
 
-        session = meta.scoped_session()
+        with meta.transaction_context() as session:
 
-        self.logger.info("Fetching detailed activity athlete_id={}, activity_id={}".format(athlete_id, activity_id))
+            self.logger.info("Fetching detailed activity athlete_id={}, activity_id={}".format(athlete_id, activity_id))
 
-        try:
+            try:
+                athlete = session.query(Athlete).get(athlete_id)
+                if not athlete:
+                    self.logger.warning("Athlete {} not found in database, ignoring activity {}".format(athlete_id, activity_id))
+                    return  # Makes the else a little unnecessary, but reads easier.
+                else:
+                    client = StravaClientForAthlete(athlete)
 
-            athlete = session.query(Athlete).get(athlete_id)
-            if not athlete:
-                self.logger.warning("Athlete {} not found in database, ignoring activity {}".format(athlete_id, activity_id))
-                return  # Makes the else a little unnecessary, but reads easier.
-            else:
-                client = StravaClientForAthlete(athlete)
+                    af = CachingActivityFetcher(cache_basedir=config.STRAVA_ACTIVITY_CACHE_DIR, client=client)
 
-                af = CachingActivityFetcher(cache_basedir=config.STRAVA_ACTIVITY_CACHE_DIR, client=client)
+                    strava_activity = af.fetch(athlete_id=athlete_id, object_id=activity_id,
+                                               use_cache=use_cache)
 
-                strava_activity = af.fetch(athlete_id=athlete_id, object_id=activity_id,
-                                           use_cache=use_cache)
-
-                ride = self.write_ride(strava_activity)
-                self.update_ride_complete(strava_activity=strava_activity, ride=ride)
-
-                session.commit()
-        except:
-            self.logger.exception(
-                "Error fetching/writing activity detail {}, athlete {}".format(activity_id, athlete_id))
-            session.rollback()
-            raise
+                    ride = self.write_ride(strava_activity)
+                    self.update_ride_complete(strava_activity=strava_activity, ride=ride)
+            except ObjectNotFound:
+                self.logger.warning("Activity {} not found, ignoring.".format(activity_id))
+            except:
+                self.logger.exception("Error fetching/writing activity "
+                                      "detail {}, athlete {}".format(activity_id, athlete_id))
+                raise
 
     def update_ride_complete(self, strava_activity: Activity, ride: Ride):
         """
