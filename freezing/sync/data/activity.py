@@ -562,60 +562,63 @@ class ActivitySync(BaseSync):
         :param start_date: Will default to competition start.
         :param end_date: Will default to competition end.
         """
-
-        sess = meta.scoped_session()
-
-        q = sess.query(Athlete)
-        q = q.filter(Athlete.access_token != None)
-        q = q.filter(func.mod(Athlete.id, total_segments) == segment)
-        athletes: List[Athlete] = q.all()
-        self.logger.info("Selecting segment {} / {}, found {} athletes".format(segment, total_segments, len(athletes)))
-        athlete_ids = [a.id for a in athletes]
-        if athlete_ids:
-            return self.sync_rides(start_date=start_date, end_date=end_date, athlete_ids=athlete_ids)
+        with meta.transaction_context() as sess:
+            q = sess.query(Athlete)
+            q = q.filter(Athlete.access_token != None)
+            q = q.filter(func.mod(Athlete.id, total_segments) == segment)
+            athletes: List[Athlete] = q.all()
+            self.logger.info("Selecting segment {} / {}, found {} athletes".format(segment, total_segments, len(athletes)))
+            athlete_ids = [a.id for a in athletes]
+            if athlete_ids:
+                return self.sync_rides(start_date=start_date, end_date=end_date, athlete_ids=athlete_ids)
 
     def sync_rides(self, start_date: datetime = None, end_date:datetime = None, rewrite:bool = False,
                    force: bool = False, athlete_ids: List[int] = None):
 
-        sess = meta.scoped_session()
+        with meta.transaction_context() as sess:
 
-        if start_date is None:
-            start_date = config.START_DATE
+            if start_date is None:
+                start_date = config.START_DATE
 
-        if end_date is None:
-            end_date = config.END_DATE
+            if end_date is None:
+                end_date = config.END_DATE
 
-        self.logger.debug("Fetching rides newer than {} and older than {}".format(start_date, end_date))
+            self.logger.debug("Fetching rides newer than {} and older than {}".format(start_date, end_date))
 
-        if (arrow.now() > (end_date + config.UPLOAD_GRACE_PERIOD)) and not force:
-            raise CommandError("Current time is after competition end date + grace "
-                               "period, not syncing rides. (Use `force` to override.)")
+            if (arrow.now() > (end_date + config.UPLOAD_GRACE_PERIOD)) and not force:
+                raise CommandError("Current time is after competition end date + grace "
+                                   "period, not syncing rides. (Use `force` to override.)")
 
-        if rewrite:
-            self.logger.info("Rewriting existing ride data.")
+            if rewrite:
+                self.logger.info("Rewriting existing ride data.")
 
-        # We iterate over all of our athletes that have access tokens.  (We can't fetch anything
-        # for those that don't.)
-        q = sess.query(Athlete)
-        q = q.filter(Athlete.access_token != None)
+            # We iterate over all of our athletes that have access tokens.  (We can't fetch anything
+            # for those that don't.)
+            q = sess.query(Athlete)
+            q = q.filter(Athlete.access_token != None)
 
-        if athlete_ids is not None:
-            q = q.filter(Athlete.id.in_(athlete_ids))
+            if athlete_ids is not None:
+                q = q.filter(Athlete.id.in_(athlete_ids))
 
-        # Also only fetch athletes that have teams configured.  This may not be strictly necessary
-        # but this is a team competition, so not a lot of value in pulling in data for those
-        # without teams.
-        # (The way the athlete sync works, athletes will only be configured for a single team
-        # that is one of the configured competition teams.)
-        q = q.filter(Athlete.team_id != None)
+            # Also only fetch athletes that have teams configured.  This may not be strictly necessary
+            # but this is a team competition, so not a lot of value in pulling in data for those
+            # without teams.
+            # (The way the athlete sync works, athletes will only be configured for a single team
+            # that is one of the configured competition teams.)
+            q = q.filter(Athlete.team_id != None)
 
-        for athlete in q.all():
-            assert isinstance(athlete, Athlete)
-            self.logger.info("Fetching rides for athlete: {0}".format(athlete))
-            try:
-                self._sync_rides(start_date=start_date, end_date=end_date, athlete=athlete, rewrite=rewrite)
-            except InvalidAuthorizationToken:
-                self.logger.error("Invalid authorization token for {} (removing)".format(athlete))
-                athlete.access_token = None
-                sess.add(athlete)
-                sess.commit()
+            for athlete in q.all():
+                assert isinstance(athlete, Athlete)
+                self.logger.info("Fetching rides for athlete: {0}".format(athlete))
+                try:
+                    self._sync_rides(start_date=start_date, end_date=end_date, athlete=athlete, rewrite=rewrite)
+                except InvalidAuthorizationToken:
+                    self.logger.error("Invalid authorization token for {} (removing)".format(athlete))
+                    athlete.access_token = None
+                    sess.add(athlete)
+                    sess.commit()
+                except:
+                    self.logger.exception("Error syncing rides for athlete {}".format(athlete))
+                    sess.rollback()
+                else:
+                    sess.commit()

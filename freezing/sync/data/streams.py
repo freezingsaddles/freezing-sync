@@ -72,32 +72,33 @@ class StreamSync(BaseSync):
                 session.rollback()
 
     def fetch_and_store_activity_streams(self, *, athlete_id: int, activity_id:int, use_cache: bool = False):
-        session = meta.scoped_session()
 
-        self.logger.info("Fetching activity streams for athlete_id={}, activity_id={}".format(athlete_id, activity_id))
+        with meta.transaction_context() as session:
 
-        ride = session.query(Ride).options(joinedload(Ride.athlete)).get(activity_id)
-        if not ride:
-            raise RuntimeError("Cannot load streams before fetching activity.")
+            self.logger.info("Fetching activity streams for athlete_id={}, activity_id={}".format(athlete_id, activity_id))
 
-        try:
-            client = StravaClientForAthlete(ride.athlete)
-            sf = CachingStreamFetcher(cache_basedir=config.STRAVA_ACTIVITY_CACHE_DIR, client=client)
-            streams = sf.fetch(athlete_id=athlete_id,
-                               object_id=activity_id,
-                               use_cache=use_cache,
-                               only_cache=False)
-            if streams:
-                self.write_ride_streams(streams, ride)
-                session.commit()
-            else:
-                self.logger.debug("No streams for {!r} (skipping)".format(ride))
-        except ObjectNotFound:
-            raise ActivityNotFound("Streams not found for {}, athlete {}".format(ride, ride.athlete))
-        except:
-            self.logger.exception(
-                "Error fetching/writing activity streams for {}, athlete {}".format(ride, ride.athlete))
-            raise
+            ride = session.query(Ride).options(joinedload(Ride.athlete)).get(activity_id)
+            if not ride:
+                raise RuntimeError("Cannot load streams before fetching activity.")
+
+            try:
+                client = StravaClientForAthlete(ride.athlete)
+                sf = CachingStreamFetcher(cache_basedir=config.STRAVA_ACTIVITY_CACHE_DIR, client=client)
+                streams = sf.fetch(athlete_id=athlete_id,
+                                   object_id=activity_id,
+                                   use_cache=use_cache,
+                                   only_cache=False)
+                if streams:
+                    self.write_ride_streams(streams, ride)
+                    session.commit()
+                else:
+                    self.logger.debug("No streams for {!r} (skipping)".format(ride))
+            except ObjectNotFound:
+                raise ActivityNotFound("Streams not found for {}, athlete {}".format(ride, ride.athlete))
+            except:
+                self.logger.exception(
+                    "Error fetching/writing activity streams for {}, athlete {}".format(ride, ride.athlete))
+                raise
 
     def write_ride_streams(self, streams: List[Stream], ride: Ride):
         """

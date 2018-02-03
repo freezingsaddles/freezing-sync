@@ -15,24 +15,22 @@ class PhotoSync(BaseSync):
     description = 'Sync (non-primary) ride photos.'
 
     def sync_photos(self):
-        sess = meta.scoped_session()
 
-        q = sess.query(orm.Ride)
-        q = q.filter_by(photos_fetched=False, private=False)
+        with meta.transaction_context() as sess:
 
-        for ride in q:
-            self.logger.info("Writing out photos for {0!r}".format(ride))
-            client = StravaClientForAthlete(ride.athlete)
-            try:
+            q = sess.query(orm.Ride)
+            q = q.filter_by(photos_fetched=False, private=False)
 
-                activity_photos = client.get_activity_photos(ride.id, only_instagram=True)
-                """ :type: list[stravalib.orm.ActivityPhoto] """
-                self.write_ride_photos_nonprimary(activity_photos, ride)
+            for ride in q:
+                self.logger.info("Writing out photos for {0!r}".format(ride))
+                client = StravaClientForAthlete(ride.athlete)
+                try:
 
-                sess.commit()
-            except:
-                sess.rollback()
-                self.logger.exception("Error fetching/writing non-primary photos activity {0}, athlete {1}".format(ride.id, ride.athlete))
+                    activity_photos = client.get_activity_photos(ride.id, only_instagram=True)
+                    """ :type: list[stravalib.orm.ActivityPhoto] """
+                    self.write_ride_photos_nonprimary(activity_photos, ride)
+                except:
+                    self.logger.exception("Error fetching/writing non-primary photos activity {0}, athlete {1}".format(ride.id, ride.athlete))
 
     def write_ride_photos_nonprimary(self, activity_photos, ride):
         """
