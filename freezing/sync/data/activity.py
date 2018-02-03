@@ -5,6 +5,7 @@ from datetime import datetime
 
 import arrow
 from geoalchemy import WKTSpatialElement
+from datadog import statsd
 
 from sqlalchemy import and_, func
 from sqlalchemy.orm import joinedload
@@ -450,6 +451,9 @@ class ActivitySync(BaseSync):
         ride.athlete = athlete
 
         self.update_ride_basic(strava_activity=activity, ride=ride)
+
+        if new_ride:
+            statsd.histogram('strava.activity.distance', ride.distance)
 
         session.add(ride)
 

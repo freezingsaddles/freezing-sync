@@ -127,8 +127,10 @@ class WeatherSync(BaseSync):
                     except:
                         self.logger.exception("Error getting sunrise/sunset for ride {0}".format(ride))
                         # But soldier on ...
+
             except:
                 self.logger.exception("Error getting weather data for ride: {0}".format(ride))
-                # But soldier on ...
+                sess.rollback()
 
-        sess.commit()
+            else:
+                sess.commit()

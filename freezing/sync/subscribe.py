@@ -2,6 +2,7 @@ import logging
 import threading
 
 import greenstalk
+from datadog import statsd
 
 from freezing.model.msg.mq import ActivityUpdate, ActivityUpdateSchema
 from freezing.model import meta
@@ -29,7 +30,7 @@ class ActivityUpdateSubscriber:
 
         with meta.transaction_context() as session:
 
-            athlete = session.query(Athlete).get(message.athlete_id)
+            athlete: Athlete = session.query(Athlete).get(message.athlete_id)
             if not athlete:
                 self.logger.warning("Athlete {} not found in database, "
                                     "ignoring activity update message {}".format(message.athlete_id,
@@ -37,15 +38,18 @@ class ActivityUpdateSubscriber:
                 return  # Makes the else a little unnecessary, but reads easier.
             try:
                 if message.operation is AspectType.delete:
+                    statsd.increment('strava.activity.delete', tags=['team:{}'.format(athlete.team_id)])
                     self.activity_sync.delete_activity(athlete_id=message.athlete_id,
                                                        activity_id=message.activity_id)
 
                 elif message.operation is AspectType.update:
+                    statsd.increment('strava.activity.update', tags=['team:{}'.format(athlete.team_id)])
                     self.activity_sync.fetch_and_store_actvitiy_detail(athlete_id=message.athlete_id,
                                                                        activity_id=message.activity_id)
                     # (We'll assume the stream doens't need re-fetching.)
 
                 elif message.operation is AspectType.create:
+                    statsd.increment('strava.activity.create', tags=['team:{}'.format(athlete.team_id)])
                     self.activity_sync.fetch_and_store_actvitiy_detail(athlete_id=message.athlete_id,
                                                                        activity_id=message.activity_id)
                     self.streams_sync.fetch_and_store_activity_streams(athlete_id=message.athlete_id,

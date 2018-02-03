@@ -2,6 +2,7 @@ import os
 import logging
 from datetime import timedelta
 from typing import List
+from datadog import initialize
 
 from colorlog import ColoredFormatter
 from envparse import env
@@ -39,6 +40,9 @@ class Config:
     UPLOAD_GRACE_PERIOD:timedelta = env('UPLOAD_GRACE_PERIOD_DAYS', cast=int, default=1, postprocessor=lambda val: timedelta(days=val))
 
     EXCLUDE_KEYWORDS:List[str] = env('EXCLUDE_KEYWORDS', cast=list, subcast=str, default=['#NoBAFS'])
+
+    DATADOG_API_KEY = env('DATADOG_API_KEY', default=None)
+    DATADOG_APP_KEY = env('DATADOG_APP_KEY', default=None)
 
 
 config = Config()
@@ -83,3 +87,7 @@ def init_logging(loglevel:int = logging.INFO, color: bool = False):
         else:
             l.setLevel(logging.INFO)
 
+
+def init_statsd():
+    if config.DATADOG_API_KEY:
+        initialize(api_key=config.DATADOG_API_KEY, app_key=config.DATADOG_APP_KEY)
