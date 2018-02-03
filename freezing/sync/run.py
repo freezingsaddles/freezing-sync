@@ -11,7 +11,7 @@ from greenstalk import Client, TimedOutError
 from freezing.model import init_model
 from freezing.model.msg.mq import DefinedTubes
 
-from freezing.sync.config import config, init_logging
+from freezing.sync.config import config, init_logging, statsd
 from freezing.sync.autolog import log
 # from freezing.sync.workflow import configured_publisher
 from freezing.sync.subscribe import ActivityUpdateSubscriber

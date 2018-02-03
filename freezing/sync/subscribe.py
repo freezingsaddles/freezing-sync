@@ -2,7 +2,6 @@ import logging
 import threading
 
 import greenstalk
-from datadog import statsd
 
 from freezing.model.msg.mq import ActivityUpdate, ActivityUpdateSchema
 from freezing.model import meta
@@ -13,6 +12,7 @@ from freezing.sync.autolog import log
 from freezing.sync.data.activity import ActivitySync
 from freezing.sync.data.streams import StreamSync
 from freezing.sync.exc import ActivityNotFound
+from freezing.sync.config import statsd
 from stravalib.exc import ObjectNotFound
 
 
@@ -78,6 +78,7 @@ class ActivityUpdateSubscriber:
                         self.handle_message(update)
                     except:
                         self.logger.exception("Error procesing message, will requeue w/ delay.")
+                        statsd.increment('strava.webhook.error')
                         self.client.release(job, delay=20)  # We put it back with a delay
                     else:
                         self.client.delete(job)

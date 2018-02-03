@@ -2,7 +2,7 @@ import os
 import logging
 from datetime import timedelta
 from typing import List
-from datadog import initialize
+from datadog import initialize, DogStatsd
 
 from colorlog import ColoredFormatter
 from envparse import env
@@ -43,6 +43,8 @@ class Config:
 
     DATADOG_API_KEY = env('DATADOG_API_KEY', default=None)
     DATADOG_APP_KEY = env('DATADOG_APP_KEY', default=None)
+    DATADOG_HOST = env('DATADOG_HOST', default='datadog.container')
+    DATADOG_PORT = env('DATADOG_PORT', cast=int, default=8125)
 
 
 config = Config()
@@ -88,6 +90,5 @@ def init_logging(loglevel:int = logging.INFO, color: bool = False):
             l.setLevel(logging.INFO)
 
 
-def init_statsd():
-    if config.DATADOG_API_KEY:
-        initialize(api_key=config.DATADOG_API_KEY, app_key=config.DATADOG_APP_KEY)
+statsd = DogStatsd(host=config.DATADOG_HOST, port=config.DATADOG_PORT)
+

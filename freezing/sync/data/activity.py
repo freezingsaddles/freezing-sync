@@ -5,7 +5,6 @@ from datetime import datetime
 
 import arrow
 from geoalchemy import WKTSpatialElement
-from datadog import statsd
 
 from sqlalchemy import and_, func
 from sqlalchemy.orm import joinedload
@@ -20,7 +19,7 @@ from stravalib.unithelper import timedelta_to_seconds
 from freezing.model import meta
 from freezing.model.orm import Athlete, Ride, RideEffort, RidePhoto, RideError, RideGeo
 
-from freezing.sync.config import config
+from freezing.sync.config import config, statsd
 from freezing.sync.exc import DataEntryError, CommandError, InvalidAuthorizationToken, ActivityNotFound
 
 from . import StravaClientForAthlete, BaseSync
