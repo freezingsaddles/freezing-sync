@@ -290,6 +290,9 @@ class ActivitySync(BaseSync):
                     if strava_activity.manual or strava_activity.trainer:
                         raise InvalidActivityType("Skipping manual/trainer ride: {}".format(strava_activity))
 
+                    if not strava_activity.type in (Activity.RIDE, Activity.EBIKERIDE):
+                        raise InvalidActivityType("Skipping non-ride activity: {}".format(strava_activity))
+
                     ride = self.write_ride(strava_activity)
                     self.update_ride_complete(strava_activity=strava_activity, ride=ride)
             except ObjectNotFound:
