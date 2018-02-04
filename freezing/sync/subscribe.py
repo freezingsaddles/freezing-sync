@@ -11,7 +11,7 @@ from freezing.model.orm import Athlete
 from freezing.sync.autolog import log
 from freezing.sync.data.activity import ActivitySync
 from freezing.sync.data.streams import StreamSync
-from freezing.sync.exc import ActivityNotFound
+from freezing.sync.exc import ActivityNotFound, InvalidActivityType
 from freezing.sync.config import statsd
 from stravalib.exc import ObjectNotFound
 
@@ -54,8 +54,8 @@ class ActivityUpdateSubscriber:
                                                                        activity_id=message.activity_id)
                     self.streams_sync.fetch_and_store_activity_streams(athlete_id=message.athlete_id,
                                                                        activity_id=message.activity_id)
-            except ActivityNotFound as x:
-                log.error(str(x))
+            except (ActivityNotFound, InvalidActivityType) as x:
+                log.info(str(x))
 
     def run_forever(self):
         # This is expecting to run in the main thread. Needs a bit of redesign

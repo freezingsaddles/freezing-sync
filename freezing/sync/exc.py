@@ -23,5 +23,9 @@ class DataEntryError(ValueError):
     pass
 
 
+class InvalidActivityType(ValueError):
+    pass
+
+
 class ActivityNotFound(RuntimeError):
     pass

@@ -20,7 +20,8 @@ from freezing.model import meta
 from freezing.model.orm import Athlete, Ride, RideEffort, RidePhoto, RideError, RideGeo
 
 from freezing.sync.config import config, statsd
-from freezing.sync.exc import DataEntryError, CommandError, InvalidAuthorizationToken, ActivityNotFound
+from freezing.sync.exc import DataEntryError, CommandError, InvalidAuthorizationToken, ActivityNotFound, \
+    InvalidActivityType
 
 from . import StravaClientForAthlete, BaseSync
 
@@ -285,6 +286,9 @@ class ActivitySync(BaseSync):
 
                     strava_activity = af.fetch(athlete_id=athlete_id, object_id=activity_id,
                                                use_cache=use_cache)
+
+                    if strava_activity.manual or strava_activity.trainer:
+                        raise InvalidActivityType("Skipping manual/trainer ride: {}".format(strava_activity))
 
                     ride = self.write_ride(strava_activity)
                     self.update_ride_complete(strava_activity=strava_activity, ride=ride)

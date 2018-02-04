@@ -28,7 +28,7 @@ class SyncActivitiesScript(BaseCommand):
                             metavar="YYYY-MM-DD")
 
         parser.add_argument("--athlete-id", dest="athlete_id",
-                            type=int, help="Just sync rides for a specific athlete.",
+                            type=int, nargs="+", help="Just sync rides for a specific athlete(s).",
                             metavar="STRAVA_ID")
 
         parser.add_argument("--rewrite", action="store_true", default=False,
@@ -41,8 +41,8 @@ class SyncActivitiesScript(BaseCommand):
 
     def execute(self, args):
 
-        fetcher = ActivitySync(logger=self.logger, publisher=configured_activity_publisher())
-        fetcher.sync_rides(start_date=args.start_date, athlete_id=args.athlete_id, rewrite=args.rewrite,
+        fetcher = ActivitySync(logger=self.logger)
+        fetcher.sync_rides(start_date=args.start_date, athlete_ids=args.athlete_id, rewrite=args.rewrite,
                            force=args.force)
 
 
