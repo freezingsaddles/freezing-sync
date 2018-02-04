@@ -24,7 +24,7 @@ class SyncActivitiesScript(BaseCommand):
         parser.add_argument("--start-date", dest="start_date",
                             help="Date to begin fetching (default is to fetch all since configured start date)",
                             default=config.START_DATE,
-                            type=lambda v: arrow.get(v).date(),
+                            type=lambda v: arrow.get(v).datetime,
                             metavar="YYYY-MM-DD")
 
         parser.add_argument("--athlete-id", dest="athlete_id",
