@@ -21,7 +21,7 @@ from freezing.model.orm import Athlete, Ride, RideEffort, RidePhoto, RideError, 
 
 from freezing.sync.config import config, statsd
 from freezing.sync.exc import DataEntryError, CommandError, InvalidAuthorizationToken, ActivityNotFound, \
-    InvalidActivityType
+    IneligibleActivity
 
 from . import StravaClientForAthlete, BaseSync
 
@@ -287,16 +287,16 @@ class ActivitySync(BaseSync):
                     strava_activity = af.fetch(athlete_id=athlete_id, object_id=activity_id,
                                                use_cache=use_cache)
 
-                    if strava_activity.manual or strava_activity.trainer:
-                        raise InvalidActivityType("Skipping manual/trainer ride: {}".format(strava_activity))
-
-                    if not strava_activity.type in (Activity.RIDE, Activity.EBIKERIDE):
-                        raise InvalidActivityType("Skipping non-ride activity: {}".format(strava_activity))
+                    self.check_activity(strava_activity, start_date=config.START_DATE,
+                                        end_date=config.END_DATE,
+                                        exclude_keywords=config.EXCLUDE_KEYWORDS)
 
                     ride = self.write_ride(strava_activity)
                     self.update_ride_complete(strava_activity=strava_activity, ride=ride)
             except ObjectNotFound:
                 raise ActivityNotFound("Activity {} not found, ignoring.".format(activity_id))
+            except IneligibleActivity:
+                raise
             except:
                 self.logger.exception("Error fetching/writing activity "
                                       "detail {}, athlete {}".format(activity_id, athlete_id))
@@ -334,6 +334,60 @@ class ActivitySync(BaseSync):
             raise
         ride.detail_fetched = True
 
+    def check_activity(self, activity: Activity, *,
+                       start_date: datetime,
+                       end_date: datetime, exclude_keywords: List[str]):
+        """
+        Asserts that activity is valid for the competition.
+
+        :param activity:
+        :param start_date:
+        :param end_date:
+        :param exclude_keywords:
+        :return:
+        """
+        assert end_date.tzinfo, "Need timezone-aware end date."
+        assert start_date.tzinfo, "Need timezone-aware start date"
+
+        if exclude_keywords is None:
+            exclude_keywords = []
+
+        activity_end_date = (activity.start_date + activity.elapsed_time)
+        if start_date and activity.start_date < start_date:
+            raise IneligibleActivity(
+                "Skipping ride {0} ({1!r}) because date ({2}) is before competition start date ({3})".format(
+                    activity.id,
+                    activity.name,
+                    start_date,
+                    end_date))
+
+        if end_date and activity_end_date > end_date:
+            raise IneligibleActivity(
+                "Skipping ride {0} ({1!r}) because date ({2}) is after competition end date ({3})".format(
+                    activity.id,
+                    activity.name,
+                    activity_end_date,
+                    end_date))
+
+        if activity.type not in (Activity.RIDE, Activity.EBIKERIDE):
+            raise IneligibleActivity(
+                "Skipping ride {0} ({1!r}) because it is not a RIDE or EBIKERIDE.".format(activity.id, activity.name))
+
+        if activity.trainer:
+            raise IneligibleActivity(
+                "Skipping ride {0} ({1!r}) because it is a trainer ride.".format(activity.id, activity.name))
+
+        if activity.manual:
+            raise IneligibleActivity(
+                "Skipping ride {0} ({1!r}) because it is a manually entered ride.".format(activity.id, activity.name))
+
+        for keyword in exclude_keywords:
+            if keyword.lower() in activity.name.lower():
+                raise IneligibleActivity(
+                    "Skipping ride {0} ({1!r}) due to presence of exclusion keyword: {2!r}".format(activity.id,
+                                                                                                   activity.name,
+                                                                                                   keyword))
+
     def list_rides(self, athlete:Athlete, start_date:datetime, end_date:datetime,
                    exclude_keywords:List[str] = None) -> List[Activity]:
         """
@@ -348,29 +402,13 @@ class ActivitySync(BaseSync):
         """
         client = StravaClientForAthlete(athlete)
 
-        if exclude_keywords is None:
-            exclude_keywords = []
-
-        # Remove tz, since we are dealing with local times for activities
-        end_date = end_date.replace(tzinfo=None)
-
         def is_excluded(activity):
-            activity_end_date = (activity.start_date_local + activity.elapsed_time)
-            if end_date and activity_end_date > end_date:
-                self.logger.info(
-                    "Skipping ride {0} ({1!r}) because date ({2}) is after competition end date ({3})".format(
-                        activity.id,
-                        activity.name,
-                        activity_end_date,
-                        end_date))
+            try:
+                self.check_activity(activity, start_date=start_date, end_date=end_date,
+                                    exclude_keywords=exclude_keywords)
+            except IneligibleActivity as x:
+                self.logger.info(str(x))
                 return True
-
-            for keyword in exclude_keywords:
-                if keyword.lower() in activity.name.lower():
-                    self.logger.info("Skipping ride {0} ({1!r}) due to presence of exclusion keyword: {2!r}".format(activity.id,
-                                                                                                           activity.name,
-                                                                                                           keyword))
-                    return True
             else:
                 return False
 

@@ -23,7 +23,7 @@ class DataEntryError(ValueError):
     pass
 
 
-class InvalidActivityType(ValueError):
+class IneligibleActivity(ValueError):
     pass
 
 

@@ -11,7 +11,7 @@ from freezing.model.orm import Athlete
 from freezing.sync.autolog import log
 from freezing.sync.data.activity import ActivitySync
 from freezing.sync.data.streams import StreamSync
-from freezing.sync.exc import ActivityNotFound, InvalidActivityType
+from freezing.sync.exc import ActivityNotFound, IneligibleActivity
 from freezing.sync.config import statsd
 from stravalib.exc import ObjectNotFound
 
@@ -54,7 +54,7 @@ class ActivityUpdateSubscriber:
                                                                        activity_id=message.activity_id)
                     self.streams_sync.fetch_and_store_activity_streams(athlete_id=message.athlete_id,
                                                                        activity_id=message.activity_id)
-            except (ActivityNotFound, InvalidActivityType) as x:
+            except (ActivityNotFound, IneligibleActivity) as x:
                 log.info(str(x))
 
     def run_forever(self):
