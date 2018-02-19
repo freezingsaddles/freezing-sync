@@ -1,5 +1,6 @@
 import logging
 from datetime import timedelta
+from decimal import Decimal
 
 from sqlalchemy import text
 
@@ -67,8 +68,11 @@ class WeatherSync(BaseSync):
 
                 start_geo_wkt = meta.scoped_session().scalar(ride.geo.start_geo.wkt)
                 point = parse_point_wkt(start_geo_wkt)
-                lon = point.lon
-                lat = point.lat
+
+                # We round lat/lon to decrease the granularity and allow better re-use of cache data.
+                lon = round(Decimal(point.lon), 1)
+                lat = round(Decimal(point.lat), 1)
+
                 # We are doing only lat/lon now instead of us_city, since us_city seems to resolve to regional weather stations
                 # rather than the closest weather stations ...
                 # hist = c.history(ride.start_date, us_city=ride.location, lat=lat, lon=lon)
