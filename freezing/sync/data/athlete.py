@@ -19,7 +19,7 @@ from freezing.model import meta
 from freezing.model.orm import Athlete, Ride, RideEffort, RidePhoto, RideError, RideGeo, Team
 
 from freezing.sync.config import config
-from freezing.sync.exc import DataEntryError, CommandError, InvalidAuthorizationToken, MultipleTeamsError, NoTeamsError
+from freezing.sync.exc import DataEntryError, CommandError, MultipleTeamsError, NoTeamsError
 
 from . import StravaClientForAthlete, BaseSync
 
@@ -68,14 +68,28 @@ class AthleteSync(BaseSync):
             athlete = Athlete()
         athlete.id = strava_athlete.id
         athlete.name = '{0} {1}'.format(strava_athlete.firstname, strava_athlete.lastname).strip()
-        # Temporary; we will update this in disambiguation phase.  (This isn't optimal; needs to be
-        # refactored....)
-        athlete.display_name = strava_athlete.firstname
+
+        display_name = strava_athlete.firstname + ' ' + strava_athlete.lastname[0]
+
+        def already_exists(display_name):
+            return session.query(Athlete).filter(Athlete.id != athlete.id)\
+                       .filter(Athlete.display_name == display_name)\
+                       .count() > 0
+
+        charidx = 1
+        while already_exists(display_name):
+            try:
+                display_name += str(strava_athlete.lastname[charidx])
+                charidx += 1
+            except IndexError:
+                self.logger.warning("Ran out of last-name letters to disambiguate {}".format(athlete))
+                break
+
+        athlete.display_name = display_name
         athlete.profile_photo = strava_athlete.profile
 
         athlete.access_token = access_token
         session.add(athlete)
-        # We really shouldn't be committing here, since we want to disambiguate names after registering
 
         return athlete
 

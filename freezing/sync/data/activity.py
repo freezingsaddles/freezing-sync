@@ -11,7 +11,7 @@ from sqlalchemy.orm import joinedload
 
 from freezing.sync.utils.cache import CachingActivityFetcher
 from stravalib import unithelper
-from stravalib.exc import ObjectNotFound
+from stravalib.exc import ObjectNotFound, AccessUnauthorized
 
 from stravalib.model import Activity, ActivityPhotoPrimary
 from stravalib.unithelper import timedelta_to_seconds
@@ -20,7 +20,7 @@ from freezing.model import meta
 from freezing.model.orm import Athlete, Ride, RideEffort, RidePhoto, RideError, RideGeo
 
 from freezing.sync.config import config, statsd
-from freezing.sync.exc import DataEntryError, CommandError, InvalidAuthorizationToken, ActivityNotFound, \
+from freezing.sync.exc import DataEntryError, CommandError, ActivityNotFound, \
     IneligibleActivity
 
 from . import StravaClientForAthlete, BaseSync
@@ -660,7 +660,7 @@ class ActivitySync(BaseSync):
                 self.logger.info("Fetching rides for athlete: {0}".format(athlete))
                 try:
                     self._sync_rides(start_date=start_date, end_date=end_date, athlete=athlete, rewrite=rewrite)
-                except InvalidAuthorizationToken:
+                except AccessUnauthorized:
                     self.logger.error("Invalid authorization token for {} (removing)".format(athlete))
                     athlete.access_token = None
                     sess.add(athlete)

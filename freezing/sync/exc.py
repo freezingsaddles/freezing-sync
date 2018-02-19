@@ -1,6 +1,3 @@
-class InvalidAuthorizationToken(RuntimeError):
-    pass
-
 
 class NoTeamsError(RuntimeError):
     pass
