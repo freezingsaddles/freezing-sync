@@ -40,7 +40,7 @@ def main():
     # TODO: Probably it would be more prudent to split into 15-minute segments, to match rate limits
     # Admittedly that will make the time-based segment calculation a little trickier.
     def segmented_sync_activities():
-        activity_sync.sync_rides_distributed(total_segments=24, segment=arrow.now().hour)
+        activity_sync.sync_rides_distributed(total_segments=4, segment=(arrow.now().hour % 4))
 
     scheduler.add_job(segmented_sync_activities, 'cron', minute='50')
 
