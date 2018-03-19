@@ -51,7 +51,7 @@ def main():
     scheduler.add_job(weather_sync.sync_weather, 'cron', hour='8')
 
     # Sync athletes once a day at 6am UTC
-    scheduler.add_job(athlete_sync.sync_athletes, 'cron', hour='6')
+    scheduler.add_job(athlete_sync.sync_athletes, 'cron', minute='30')
 
     scheduler.start()
 
