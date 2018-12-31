@@ -17,6 +17,7 @@ This component is designed to run as a container and should be configured with e
 - `STRAVA_CLIENT_ID`: The ID of the Strava application.
 - `STRAVA_CLIENT_SECRET`: Secret key for the app (available from App settings page in Strava)
 - `WUNDERGROUND_API_KEY`: The key to your wunderground.com development account.
+- `WUNDERGROUND_CACHE_DIR`: The directory for wunderground.com cache files
 - `TEAMS`: A comma-separated list of team (Strava club) IDs for the competition. = env('TEAMS', cast=list, subcast=int, default=[])
 - `OBSERVER_TEAMS`: Comma-separated list of any teams that are just observing, not playing (they can get their overall stats included, but won't be part of leaderboards)
 - `START_DATE`: The beginning of the competition.
