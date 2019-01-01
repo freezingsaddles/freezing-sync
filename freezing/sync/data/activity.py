@@ -358,8 +358,8 @@ class ActivitySync(BaseSync):
                 "Skipping ride {0} ({1!r}) because date ({2}) is before competition start date ({3})".format(
                     activity.id,
                     activity.name,
-                    start_date,
-                    end_date))
+                    activity_start_date,
+                    start_date))
 
         if end_date and activity_end_date > end_date:
             raise IneligibleActivity(
