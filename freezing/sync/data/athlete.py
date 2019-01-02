@@ -178,6 +178,9 @@ class AthleteSync(BaseSync):
                 self.logger.info("Multiple teams matched for {}: {}".format(strava_athlete, matches))
                 raise MultipleTeamsError(matches)
             elif len(matches) == 0:
+                # Fall back to main team if it is the only team they are in
+                matches = [c for c in matches if c.id == config.MAIN_TEAM]
+            if len(matches) == 0:
                 raise NoTeamsError()
             else:
                 club = matches[0]
