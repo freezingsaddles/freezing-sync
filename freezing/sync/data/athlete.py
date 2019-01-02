@@ -168,6 +168,14 @@ class AthleteSync(BaseSync):
         all_teams = config.COMPETITION_TEAMS
         self.logger.info("Checking {0!r} against {1!r}".format(strava_athlete.clubs, all_teams))
         try:
+            if strava_athlete.clubs is None:
+                raise NoTeamsError(
+                        "Athlete %s (%s): No team access - %s. %s.".format(
+                            strava_athlete.id,
+                            strava_athlete.name,
+                            "full profile access required.",
+                            "Please re-authorize."
+                        )
             matches = [c for c in strava_athlete.clubs if c.id in all_teams]
             self.logger.debug("Matched: {0!r}".format(matches))
             athlete_model.team = None
@@ -181,7 +189,13 @@ class AthleteSync(BaseSync):
                 # Fall back to main team if it is the only team they are in
                 matches = [c for c in matches if c.id == config.MAIN_TEAM]
             if len(matches) == 0:
-                raise NoTeamsError()
+                raise NoTeamsError(
+                    "Athlete %s (%s): No teams matched ours. Teams defined: %s".format(
+                            strava_athlete.id,
+                            strava_athlete.name,
+                            strava_athlete.clubs,
+                            )
+                )
             else:
                 club = matches[0]
                 # create the team row if it does not exist
