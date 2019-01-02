@@ -170,12 +170,14 @@ class AthleteSync(BaseSync):
         try:
             if strava_athlete.clubs is None:
                 raise NoTeamsError(
-                        "Athlete %s (%s): No team access - %s. %s.".format(
-                            strava_athlete.id,
-                            strava_athlete.name,
-                            "full profile access required.",
-                            "Please re-authorize."
-                        )
+                    "Athlete {0} ({1} {2}): No team access - {3}. {4}.".format(
+                        strava_athlete.id,
+                        strava_athlete.firstname,
+                        strava_athlete.lastname,
+                        "full profile access required.",
+                        "Please re-authorize."
+                    )
+                )
             matches = [c for c in strava_athlete.clubs if c.id in all_teams]
             self.logger.debug("Matched: {0!r}".format(matches))
             athlete_model.team = None
@@ -190,9 +192,11 @@ class AthleteSync(BaseSync):
                 matches = [c for c in matches if c.id == config.MAIN_TEAM]
             if len(matches) == 0:
                 raise NoTeamsError(
-                    "Athlete %s (%s): No teams matched ours. Teams defined: %s".format(
+                    "Athlete {0} ({1} {2}): {3} {4}".format(
                             strava_athlete.id,
-                            strava_athlete.name,
+                            strava_athlete.firstname,
+                            strava_athlete.lastname,
+                            "No teams matched ours. Teams defined:",
                             strava_athlete.clubs,
                             )
                 )
