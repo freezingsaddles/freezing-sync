@@ -13,6 +13,7 @@ from freezing.sync.utils.cache import CachingActivityFetcher
 from stravalib import unithelper
 
 from stravalib import model as sm
+from stravalib.exc import Fault
 from stravalib.unithelper import timedelta_to_seconds
 
 from freezing.model import meta
@@ -44,11 +45,14 @@ class AthleteSync(BaseSync):
 
             for athlete in q.all():
                 self.logger.info("Updating athlete: {0}".format(athlete))
-                c = StravaClientForAthlete(athlete)
                 try:
-                    strava_athlete = c.get_athlete()
+                    client = StravaClientForAthlete(athlete)
+                    strava_athlete = client.get_athlete()
                     self.register_athlete(strava_athlete, athlete.access_token)
                     self.register_athlete_team(strava_athlete, athlete)
+                except Fault as x:
+                    self.logger.warning("Error registering athlete {0} with stravalib fault {}".format(
+                        athlete, str(x)), exc_info=True)
                 except:
                     self.logger.warning("Error registering athlete {0}".format(athlete), exc_info=True)
                     # But carry on

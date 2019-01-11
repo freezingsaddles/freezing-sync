@@ -23,9 +23,8 @@ class PhotoSync(BaseSync):
 
             for ride in q:
                 self.logger.info("Writing out photos for {0!r}".format(ride))
-                client = StravaClientForAthlete(ride.athlete)
                 try:
-
+                    client = StravaClientForAthlete(ride.athlete)
                     activity_photos = client.get_activity_photos(ride.id, only_instagram=True)
                     """ :type: list[stravalib.orm.ActivityPhoto] """
                     self.write_ride_photos_nonprimary(activity_photos, ride)

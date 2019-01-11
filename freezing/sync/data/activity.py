@@ -11,7 +11,7 @@ from sqlalchemy.orm import joinedload
 
 from freezing.sync.utils.cache import CachingActivityFetcher
 from stravalib import unithelper
-from stravalib.exc import ObjectNotFound, AccessUnauthorized
+from stravalib.exc import ObjectNotFound, AccessUnauthorized, Fault
 
 from stravalib.model import Activity, ActivityPhotoPrimary
 from stravalib.unithelper import timedelta_to_seconds
@@ -297,6 +297,11 @@ class ActivitySync(BaseSync):
                 raise ActivityNotFound("Activity {} not found, ignoring.".format(activity_id))
             except IneligibleActivity:
                 raise
+            except Fault as x:
+                self.logger.exception("Stravalib fault: "
+                                      "detail {}, athlete {}, exception {}".format(
+                                          activity_id, athlete_id, str(x)))
+                raise
             except:
                 self.logger.exception("Error fetching/writing activity "
                                       "detail {}, athlete {}".format(activity_id, athlete_id))
@@ -400,7 +405,11 @@ class ActivitySync(BaseSync):
 
         :return: list of activity objects for rides in reverse chronological order.
         """
-        client = StravaClientForAthlete(athlete)
+        try:
+            client = StravaClientForAthlete(athlete)
+        except Fault as x:
+            self.logger.warning(str(x))
+            return []
 
         def is_excluded(activity):
             try:
