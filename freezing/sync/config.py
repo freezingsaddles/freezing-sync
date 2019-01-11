@@ -33,6 +33,7 @@ class Config:
 
     COMPETITION_TEAMS = env('TEAMS', cast=list, subcast=int, default=[])
     OBSERVER_TEAMS = env('OBSERVER_TEAMS', cast=list, subcast=int, default=[])
+    MAIN_TEAM = env('MAIN_TEAM', cast=int, default=0)
 
     START_DATE = env('START_DATE', postprocessor=lambda val: arrow.get(val).datetime)
     END_DATE = env('END_DATE', postprocessor=lambda val: arrow.get(val).datetime)
