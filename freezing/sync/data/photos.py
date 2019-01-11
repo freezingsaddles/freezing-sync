@@ -23,14 +23,17 @@ class PhotoSync(BaseSync):
 
             for ride in q:
                 self.logger.info("Writing out photos for {0!r}".format(ride))
-                client = StravaClientForAthlete(ride.athlete)
                 try:
-
+                    client = StravaClientForAthlete(ride.athlete)
                     activity_photos = client.get_activity_photos(ride.id, only_instagram=True)
                     """ :type: list[stravalib.orm.ActivityPhoto] """
                     self.write_ride_photos_nonprimary(activity_photos, ride)
                 except:
-                    self.logger.exception("Error fetching/writing non-primary photos activity {0}, athlete {1}".format(ride.id, ride.athlete))
+                    self.logger.exception("Error fetching/writing "
+                                          "non-primary photos activity "
+                                          "{0}, athlete {1}".format(
+                                              ride.id, ride.athlete),
+                                          exc_info=True)
 
     def write_ride_photos_nonprimary(self, activity_photos, ride):
         """
