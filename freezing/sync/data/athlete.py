@@ -50,9 +50,6 @@ class AthleteSync(BaseSync):
                     strava_athlete = client.get_athlete()
                     self.register_athlete(strava_athlete, athlete.access_token)
                     self.register_athlete_team(strava_athlete, athlete)
-                except Fault as x:
-                    self.logger.warning("Error registering athlete {0} with stravalib fault {}".format(
-                        athlete, str(x)), exc_info=True)
                 except:
                     self.logger.warning("Error registering athlete {0}".format(athlete), exc_info=True)
                     # But carry on

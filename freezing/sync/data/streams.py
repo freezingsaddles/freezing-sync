@@ -68,7 +68,10 @@ class StreamSync(BaseSync):
                     self.logger.debug("No streams for {!r} (skipping)".format(ride))
             except:
                 self.logger.exception(
-                    "Error fetching/writing activity streams for {}, athlete {}".format(ride, ride.athlete))
+                        "Error fetching/writing activity streams for "
+                        "{}, athlete {}".format(
+                            ride, ride.athlete),
+                        exc_info=True)
                 session.rollback()
 
     def fetch_and_store_activity_streams(self, *, athlete_id: int, activity_id:int, use_cache: bool = False):
@@ -97,7 +100,9 @@ class StreamSync(BaseSync):
                 raise ActivityNotFound("Streams not found for {}, athlete {}".format(ride, ride.athlete))
             except:
                 self.logger.exception(
-                    "Error fetching/writing activity streams for {}, athlete {}".format(ride, ride.athlete))
+                        "Error fetching/writing activity streams for "
+                        "{}, athlete {}".format(
+                            ride, ride.athlete), exc_info=True)
                 raise
 
     def write_ride_streams(self, streams: List[Stream], ride: Ride):

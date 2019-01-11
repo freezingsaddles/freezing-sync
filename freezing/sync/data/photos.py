@@ -29,7 +29,11 @@ class PhotoSync(BaseSync):
                     """ :type: list[stravalib.orm.ActivityPhoto] """
                     self.write_ride_photos_nonprimary(activity_photos, ride)
                 except:
-                    self.logger.exception("Error fetching/writing non-primary photos activity {0}, athlete {1}".format(ride.id, ride.athlete))
+                    self.logger.exception("Error fetching/writing "
+                                          "non-primary photos activity "
+                                          "{0}, athlete {1}".format(
+                                              ride.id, ride.athlete),
+                                          exc_info=True)
 
     def write_ride_photos_nonprimary(self, activity_photos, ride):
         """
