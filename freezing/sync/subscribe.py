@@ -74,7 +74,7 @@ class ActivityUpdateSubscriber:
                 else:
                     try:
                         self.logger.info("Received message: {!r}".format(job.body))
-                        update = schema.loads(job.body).data
+                        update = schema.loads(job.body)
                         self.handle_message(update)
                     except:
                         self.logger.exception("Error procesing message, will requeue w/ delay.")
