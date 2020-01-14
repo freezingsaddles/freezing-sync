@@ -2,13 +2,13 @@
 # =====
 
 FROM ubuntu:xenial as buildstep
-LABEL maintainer="Hans Lellelid <hans@xmpl.org>"
+LABEL maintainer="Richard Bullington-McGuire <richard@obscure.org>"
 
 COPY resources/docker/sources.list /etc/apt/sources.list
 RUN apt-get update
 
 RUN apt-get install -y software-properties-common
-RUN add-apt-repository -y ppa:jonathonf/python-3.6
+RUN add-apt-repository -y ppa:deadsnakes/ppa
 RUN apt-get update
 
 RUN apt-get install -y python3.6 python3.6-dev curl build-essential git
@@ -32,15 +32,15 @@ RUN python3.6 setup.py bdist_wheel -d /build/wheels
 # =====
 
 FROM ubuntu:xenial as deploystep
-LABEL maintainer="Hans Lellelid <hans@xmpl.org>"
+LABEL maintainer="Richard Bullington-McGuire <richard@obscure.org>"
 
 COPY resources/docker/sources.list /etc/apt/sources.list
 
 RUN apt-get update \
   && apt-get install -y software-properties-common curl \
-  && add-apt-repository -y ppa:jonathonf/python-3.6 \
+  && add-apt-repository -y ppa:deadsnakes/ppa \
   && apt-get update \
-  && apt-get install -y python3.6 vim-tiny --no-install-recommends \
+  && apt-get install -y python3.6 --no-install-recommends \
   && apt-get clean \
   && curl https://bootstrap.pypa.io/get-pip.py | python3.6 \
   && pip3 install --upgrade pip setuptools wheel \
