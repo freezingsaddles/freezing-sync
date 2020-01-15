@@ -16,8 +16,8 @@ This component is designed to run as a container and should be configured with e
 - `SQLALCHEMY_URL`: The URL to the database.
 - `STRAVA_CLIENT_ID`: The ID of the Strava application.
 - `STRAVA_CLIENT_SECRET`: Secret key for the app (available from App settings page in Strava)
-- `WUNDERGROUND_API_KEY`: The key to your wunderground.com development account.
-- `WUNDERGROUND_CACHE_DIR`: The directory for wunderground.com cache files
+- `DARK_SKY_API_KEY`: The key to your darksky.net development account.
+- `DARK_SKY_CACHE_DIR`: The directory for darksky.net cache files
 - `TEAMS`: A comma-separated list of team (Strava club) IDs for the competition. = env('TEAMS', cast=list, subcast=int, default=[])
 - `OBSERVER_TEAMS`: Comma-separated list of any teams that are just observing, not playing (they can get their overall stats included, but won't be part of leaderboards)
 - `START_DATE`: The beginning of the competition.
@@ -32,7 +32,29 @@ If you are running this component locally for development/debugging, you may set
 APP_SETTINGS=local.cfg freezing-sync
 ```
 
+You can run individual sync commands too:
+```bash
+APP_SETTINGS=local.cfg python -m freezing.sync.cli.sync_weather --debug --limit 1
+```
+
 There are a few additional settings you may need (i.e. not to be default) when not running in Docker:
 - `STRAVA_ACTIVITY_CACHE_DIR`: Where to put cached activities (absolute path is a good idea).
-- `WUNDERGROUND_CACHE_DIR`: Similarly, where should weather files be stored?
+- `DARK_SKY_CACHE_DIR`: Similarly, where should weather files be stored?
 `
+
+## Testing the dark sky API
+
+If you, like I, don't know what you're doing, you can experiment with the dark sky API in the repl:
+
+```bash
+# pip install rwt
+# python -m rwt -q darksky_weather
+>>> from darksky.api import DarkSky
+>>> from darksky.types import languages, units, weather
+>>> from datetime import datetime
+>>> darksky = DarkSky('YOUR_API_KEY')
+>>> hist = darksky.get_time_machine_forecast(time = datetime(2019, 2, 18), latitude = 37.6, longitude = -77.5, exclude=[weather.MINUTELY, weather.ALERTS])
+>>> [ x.temperature for x in hist.hourly.data ]
+[37.5, 37.17, 37.38, 37.82, 38.28, 38.71, 39.43, 40.04, 41.57, 44.51, 49.19, 52.36, 54.33, 56.05, 56.36, 55.7, 54.18, 51.96, 48.39, 45.94, 44.08, 42.6, 41.32, 40.13]
+```
+
