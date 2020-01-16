@@ -9,16 +9,16 @@ from darksky.api import DarkSky
 from darksky.types import weather
 
 
-class HistoDarkSky(DarkSky):
+class HistoDarkSky(object):
     """
     Histomorphic dark sky.
     """
 
     def __init__(self, api_key: str, cache_dir: str = None, cache_only: bool = False, logger: Logger = None):
-        super().__init__(api_key)
         self.logger = logger or getLogger(__name__)
         self.cache_dir = cache_dir
         self.cache_only = cache_only
+        self.dark_sky = DarkSky(api_key)
         if cache_only and not cache_dir:
             raise RuntimeError('Cache only but no cache dir 8(')
 
@@ -27,7 +27,7 @@ class HistoDarkSky(DarkSky):
             time=time,
             longitude=longitude,
             latitude=latitude,
-            fetch=lambda: self.get_time_machine_forecast(
+            fetch=lambda: self.dark_sky.get_time_machine_forecast(
                 time=time,
                 longitude=longitude,
                 latitude=latitude,
