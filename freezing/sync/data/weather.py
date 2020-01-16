@@ -3,15 +3,13 @@ from datetime import timedelta
 from decimal import Decimal
 
 from sqlalchemy import text
+from pytz import timezone
 
 from freezing.model import meta, orm
 
 from freezing.sync.utils.wktutils import parse_point_wkt
 from freezing.sync.wx.sunrise import Sun
-
-from darksky.api import DarkSky
-from darksky.types import weather
-from pytz import timezone
+from freezing.sync.wx.darksky.api import HistoDarkSky
 
 from freezing.sync.config import config
 
@@ -45,12 +43,17 @@ class WeatherSync(BaseSync):
             join ride_geo G on G.ride_id = R.id
             left join ride_weather W on W.ride_id = R.id
             where W.ride_id is null
-            and date(R.start_date) < CURDATE() -- Only include rides from yesterday 
+            and date(R.start_date) < CURDATE() -- Only include rides from yesterday or before
             and time(R.start_date) != '00:00:00' -- Exclude bad entries.
             ;
             """)
 
-        darksky = DarkSky(config.DARK_SKY_API_KEY)
+        darksky = HistoDarkSky(
+            api_key=config.DARK_SKY_API_KEY,
+            cache_dir=config.DARK_SKY_CACHE_DIR,
+            cache_only=cache_only,
+            logger=self.logger
+        )
 
         rows = meta.engine.execute(q).fetchall()  # @UndefinedVariable
         num_rides = len(rows)
@@ -70,17 +73,13 @@ class WeatherSync(BaseSync):
                 point = parse_point_wkt(start_geo_wkt)
 
                 # We round lat/lon to decrease the granularity and allow better re-use of cache data.
-                lon = round(Decimal(point.lon), 3)  # go back to 1 digit precision if we need caching?
-                lat = round(Decimal(point.lat), 3)  # go back to 1 digit precision if we need caching?
+                # Gives about an 80% hit rate vs about 20% for 2 decimals.
+                lon = round(Decimal(point.lon), 1)
+                lat = round(Decimal(point.lat), 1)
 
                 self.logger.debug("Ride metadata: time={0} dur={1} loc={2}/{3}".format(ride.start_date, ride.elapsed_time, lat, lon))
 
-                hist = darksky.get_time_machine_forecast(
-                    time=ride.start_date,
-                    latitude=lat,
-                    longitude=lon,
-                    exclude=[weather.MINUTELY, weather.ALERTS]  # minutely only gives precipitation
-                )
+                hist = darksky.histo_forecast(time=ride.start_date, latitude=lat, longitude=lon)
 
                 self.logger.debug("Got response in timezone {0}".format(hist.timezone))
 
