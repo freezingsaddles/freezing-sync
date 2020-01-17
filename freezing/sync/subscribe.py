@@ -44,13 +44,13 @@ class ActivityUpdateSubscriber:
 
                 elif message.operation is AspectType.update:
                     statsd.increment('strava.activity.update', tags=['team:{}'.format(athlete.team_id)])
-                    self.activity_sync.fetch_and_store_actvitiy_detail(athlete_id=message.athlete_id,
+                    self.activity_sync.fetch_and_store_activity_detail(athlete_id=message.athlete_id,
                                                                        activity_id=message.activity_id)
                     # (We'll assume the stream doens't need re-fetching.)
 
                 elif message.operation is AspectType.create:
                     statsd.increment('strava.activity.create', tags=['team:{}'.format(athlete.team_id)])
-                    self.activity_sync.fetch_and_store_actvitiy_detail(athlete_id=message.athlete_id,
+                    self.activity_sync.fetch_and_store_activity_detail(athlete_id=message.athlete_id,
                                                                        activity_id=message.activity_id)
                     self.streams_sync.fetch_and_store_activity_streams(athlete_id=message.athlete_id,
                                                                        activity_id=message.activity_id)

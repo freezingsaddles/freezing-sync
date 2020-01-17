@@ -54,9 +54,11 @@ class AthleteSync(BaseSync):
                     self.logger.warning("Error registering athlete {0}".format(athlete), exc_info=True)
                     # But carry on
 
-            self.disambiguate_athlete_display_names()
+            # Disable disambiguation because it overwrites custom display names. register_athlete()
+            # already makes an effort to disambiguate names, so it seems somewhat redundant anyway.
+            # self.disambiguate_athlete_display_names()
 
-    def register_athlete(self, strava_athlete:sm.Athlete, access_token:str):
+    def register_athlete(self, strava_athlete: sm.Athlete, access_token: str) -> Athlete:
         """
         Ensure specified athlete is added to database, returns athlete model.
 
@@ -65,35 +67,38 @@ class AthleteSync(BaseSync):
         """
         session = meta.scoped_session()
         athlete = session.query(Athlete).get(strava_athlete.id)
+
+        # Only update the display name if it's either a new athlete or the athlete name has
+        # changed and the original display name still matches the original strava name
+        athlete_name = f'{strava_athlete.firstname} {strava_athlete.lastname}'
+        generate_display_name = athlete is None or \
+            athlete_name != athlete.name and athlete.name.startswith(athlete.display_name)
+
         if athlete is None:
             athlete = Athlete()
+
         athlete.id = strava_athlete.id
-        athlete.name = '{0} {1}'.format(strava_athlete.firstname, strava_athlete.lastname).strip()
+        athlete.name = athlete_name
+        athlete.profile_photo = strava_athlete.profile
+        athlete.access_token = access_token
 
-        display_name = strava_athlete.firstname + ' ' + strava_athlete.lastname[0]
-
-        def already_exists(display_name):
-            return session.query(Athlete).filter(Athlete.id != athlete.id)\
-                       .filter(Athlete.display_name == display_name)\
+        def already_exists(display_name) -> bool:
+            return session.query(Athlete).filter(Athlete.id != athlete.id) \
+                       .filter(Athlete.display_name == display_name) \
                        .count() > 0
 
-        charidx = 1
-        while already_exists(display_name):
-            try:
-                display_name += str(strava_athlete.lastname[charidx])
-                charidx += 1
-            except IndexError:
-                self.logger.warning("Ran out of last-name letters to disambiguate {}".format(athlete))
-                break
+        def unambiguous_display_name(idx: int) -> str:
+            name = athlete_name[:idx]
+            return name if name == athlete_name or not already_exists(name) else unambiguous_display_name(idx + 1)
 
-        athlete.display_name = display_name
-        athlete.profile_photo = strava_athlete.profile
+        if generate_display_name:
+            athlete.display_name = unambiguous_display_name(2 + athlete_name.index(' '))
 
-        athlete.access_token = access_token
         session.add(athlete)
 
         return athlete
 
+    # Presently disabled.
     def disambiguate_athlete_display_names(self):
         session = meta.scoped_session()
         q = session.query(Athlete)
