@@ -3,9 +3,7 @@ import os
 from datetime import datetime
 from logging import Logger, getLogger
 
-from pickle import dump, load, UnpicklingError
-
-from json import loads
+from json import dumps, load, loads
 from requests import get
 from requests.exceptions import HTTPError
 
@@ -30,18 +28,24 @@ class HistoDarkSky(object):
             raise RuntimeError('Cache only but no cache dir 8(')
 
     def histo_forecast(self, time: datetime, latitude: float, longitude: float) -> Forecast:
-        return self._get_cached(
-            time=time,
-            longitude=longitude,
-            latitude=latitude,
-            fetch=lambda: self.forecast(
+        json = self._get_cached(
+            path=self._cache_file(
+                time=time,
+                longitude=longitude,
+                latitude=latitude
+            ),
+            fetch=lambda: self._forecast(
                 time=time,
                 latitude=latitude,
                 longitude=longitude
             )
         )
+        return Forecast(json)
 
     def forecast(self, time: datetime, latitude: float, longitude: float) -> Forecast:
+        return Forecast(self._forecast(time=time, latitude=latitude, longitude=longitude))
+
+    def _forecast(self, time: datetime, latitude: float, longitude: float):
         response = get(
             url=f'https://api.darksky.net/forecast/{self.api_key}/{latitude},{longitude},{time.isoformat()}',
             params={'units': 'us', 'exclude': 'minutely,alerts,flags'},
@@ -51,23 +55,24 @@ class HistoDarkSky(object):
         if response.status_code is not 200:
             raise HTTPError(
                 f'Bad response: {response.status_code} {response.reason}: {response.text}')
-        json = loads(response.text)
-        # self.logger.info(f'Blob: {json}')
-        return Forecast(json)
+        return loads(response.text)
 
-    def _get_cached(self, time: datetime, longitude: float, latitude: float, fetch):
+    def _cache_file(self, time: datetime, longitude: float, latitude: float):
         if not self.cache_dir:
-            return fetch()
-
+            return None  # where are all the monads
         directory = os.path.join(self.cache_dir, f'{longitude}x{latitude}')
-        path = os.path.join(directory, f'{time.strftime("%Y-%m-%d")}.pykl')
+        return os.path.join(directory, f'{time.strftime("%Y-%m-%d")}.json')
+
+    def _get_cached(self, path: str, fetch):
+        if not path:
+            return fetch()
 
         if os.path.exists(path):
             self.logger.debug(f'Cache hit for {path}')
             try:
-                with open(path, 'rb') as file:
+                with open(path, 'r') as file:
                     return load(file)
-            except UnpicklingError:
+            except:
                 self.logger.warning(f'Error reading cache file {path}')
                 os.remove(path)
 
@@ -75,12 +80,15 @@ class HistoDarkSky(object):
             raise RuntimeError(f'No cache entry for {path} and cache_only is true')
 
         self.logger.debug(f'Cache miss for {path}')
+
+        json = fetch()
+
+        directory = os.path.dirname(path)
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        data = fetch()
-        with open(path, 'wb') as file:
-            dump(data, file)
+        with open(path, 'w') as file:
+            file.write(dumps(json, indent=2))
 
-        return data
+        return json
 
