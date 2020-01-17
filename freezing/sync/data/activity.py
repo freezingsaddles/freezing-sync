@@ -114,7 +114,16 @@ class ActivitySync(BaseSync):
                 session.add(effort)
                 session.flush()
 
-            ride.efforts_fetched = True
+            # It would appear that Strava has some delayed consistency, and occasionally no efforts are returned
+            # on an initial apparently-successful sync, so try at least _MAX_EFFORT_RESYNCS more times to fetch,
+            # in the hope that efforts will subsequently appear. Some rides, of course, have no efforts.
+            _MAX_EFFORT_RESYNCS=2
+
+            sync_count = ride.resync_count or 0
+            if len(strava_activity.segment_efforts) > 0 or sync_count > _MAX_EFFORT_RESYNCS:
+                ride.efforts_fetched = True
+            else:
+                ride.resync_count = 1 + sync_count
 
         except:
             self.logger.exception("Error adding effort for ride: {0}".format(ride))
@@ -228,7 +237,9 @@ class ActivitySync(BaseSync):
         q = q.filter(Ride.private==False)
 
         if not rewrite:
-            q = q.filter(Ride.detail_fetched==False)
+            no_detail = Ride.detail_fetched==False
+            no_efforts = Ride.efforts_fetched==False
+            q = q.filter(no_detail | no_efforts)
 
         if athlete_id:
             self.logger.info("Filtering activity details for {}".format(athlete_id))
@@ -248,8 +259,11 @@ class ActivitySync(BaseSync):
 
                 af = CachingActivityFetcher(cache_basedir=config.STRAVA_ACTIVITY_CACHE_DIR, client=client)
 
+                # If I already fetched this ride, there must be some reason to not trust the data so bypass the cache
+                bypass_cache = ride.detail_fetched
+
                 strava_activity = af.fetch(athlete_id=ride.athlete_id, object_id=ride.id,
-                                           use_cache=use_cache, only_cache=only_cache)
+                                           use_cache=use_cache and not bypass_cache, only_cache=only_cache)
 
                 self.update_ride_complete(strava_activity=strava_activity, ride=ride)
 
