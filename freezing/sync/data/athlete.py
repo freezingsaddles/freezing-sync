@@ -79,23 +79,17 @@ class AthleteSync(BaseSync):
                        .filter(Athlete.display_name == display_name) \
                        .count() > 0
 
-        def unambiguous_display_name(idx: int) -> str:
-            name = athlete_name[:idx]
-            return name if name == athlete_name or \
-                len(athlete_name) == idx or \
-                not already_exists(name) \
-                else unambiguous_display_name(idx + 1)
+        def unambiguous_display_name() -> str:
+            display_name = athlete_name[2 + athlete_name.index(' ')]
+            return display_name \
+                if not already_exists(display_name) \
+                else athlete_name
 
         # Only update the display name if it is either:
-        # a new athlete, or
-        # the athlete name has changed, and
-        #   the original display name still matches the original strava name
+        # a new athlete, or the athlete name has changed
         try:
-            if athlete is None or \
-                athlete_name != athlete.name and \
-                    athlete.name.startswith(athlete.display_name):
-                    athlete.display_name = unambiguous_display_name(
-                            2 + athlete_name.index(' '))
+            if athlete is None or athlete_name != athlete.name:
+                athlete.display_name = unambiguous_display_name()
         except:
             self.logger.exception(
                 "Athlete name disambiguation error for {}".format(
