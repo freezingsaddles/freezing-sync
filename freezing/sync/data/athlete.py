@@ -71,7 +71,6 @@ class AthleteSync(BaseSync):
         athlete.id = strava_athlete.id
         athlete_name = \
             f'{strava_athlete.firstname} {strava_athlete.lastname}'
-        athlete.name = athlete_name
         athlete.profile_photo = strava_athlete.profile
         athlete.access_token = access_token
 
@@ -89,7 +88,7 @@ class AthleteSync(BaseSync):
         # Only update the display name if it is either:
         # a new athlete, or the athlete name has changed
         try:
-            if athlete is None or athlete_name != athlete.name:
+            if athlete_name != athlete.name:
                 athlete.display_name = unambiguous_display_name()
         except:
             self.logger.exception(
@@ -98,6 +97,7 @@ class AthleteSync(BaseSync):
                 exc_info=True)
             athlete.display_name = athlete_name
         finally:
+            athlete.name = athlete_name
             session.add(athlete)
         return athlete
 
