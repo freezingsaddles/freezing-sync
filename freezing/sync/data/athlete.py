@@ -71,6 +71,7 @@ class AthleteSync(BaseSync):
         athlete.id = strava_athlete.id
         athlete_name = \
             f'{strava_athlete.firstname} {strava_athlete.lastname}'
+        athlete.name = athlete_name
         athlete.profile_photo = strava_athlete.profile
         athlete.access_token = access_token
 
@@ -80,7 +81,7 @@ class AthleteSync(BaseSync):
                        .count() > 0
 
         def unambiguous_display_name() -> str:
-            display_name = athlete_name[2 + athlete_name.index(' ')]
+            display_name = athlete_name[:(2 + athlete_name.index(' '))]
             return display_name \
                 if not already_exists(display_name) \
                 else athlete_name
