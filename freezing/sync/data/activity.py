@@ -268,7 +268,7 @@ class ActivitySync(BaseSync):
         else:
             self.logger.warning("Unable to find ride {} for athlete {} to remove.".format(activity_id, athlete_id))
 
-    def fetch_and_store_actvitiy_detail(self, *, athlete_id: int, activity_id:int, use_cache: bool = False):
+    def fetch_and_store_activity_detail(self, *, athlete_id: int, activity_id:int, use_cache: bool = False):
 
         with meta.transaction_context() as session:
 
