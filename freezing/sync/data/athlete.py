@@ -70,8 +70,7 @@ class AthleteSync(BaseSync):
 
         athlete.id = strava_athlete.id
         athlete_name = \
-            f'{strava_athlete.firstname} {strava_athlete.lastname}'
-        athlete.name = athlete_name
+            f"{strava_athlete.firstname} {strava_athlete.lastname}"
         athlete.profile_photo = strava_athlete.profile
         athlete.access_token = access_token
 
@@ -81,23 +80,27 @@ class AthleteSync(BaseSync):
                        .count() > 0
 
         def unambiguous_display_name() -> str:
-            display_name = athlete_name[:(2 + athlete_name.index(' '))]
-            return display_name \
-                if not already_exists(display_name) \
-                else athlete_name
+            display_name = \
+                f"{strava_athlete.firstname} {strava_athlete.lastname[0]}"
+            if (already_exists(display_name)):
+                self.logger.info(
+                    f"display_name '{display_name}' conflicts, using '{athlete_name}'")
+                display_name = athlete_name
+            return display_name
 
         # Only update the display name if it is either:
         # a new athlete, or the athlete name has changed
         try:
-            if athlete is None or athlete_name != athlete.name:
+            if athlete_name != athlete.name:
+                self.logger.info( f"Athlete '{athlete_name}' was renamed '{athlete.name}'")
                 athlete.display_name = unambiguous_display_name()
         except:
             self.logger.exception(
-                "Athlete name disambiguation error for {}".format(
-                    strava_athlete.id),
+                f"Athlete name disambiguation error for {strava_athlete.id}",
                 exc_info=True)
             athlete.display_name = athlete_name
         finally:
+            athlete.name = athlete_name
             session.add(athlete)
         return athlete
 
