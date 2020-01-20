@@ -70,7 +70,7 @@ class AthleteSync(BaseSync):
 
         athlete.id = strava_athlete.id
         athlete_name = \
-            f'{strava_athlete.firstname} {strava_athlete.lastname}'
+            f"{strava_athlete.firstname} {strava_athlete.lastname}"
         athlete.profile_photo = strava_athlete.profile
         athlete.access_token = access_token
 
@@ -81,8 +81,8 @@ class AthleteSync(BaseSync):
 
         def unambiguous_display_name() -> str:
             display_name = \
-                f'{strava_athlete.firstname} {strava_athlete.lastname[0]}'
-            if (already_exists(display_name):
+                f"{strava_athlete.firstname} {strava_athlete.lastname[0]}"
+            if (already_exists(display_name)):
                 self.logger.info(
                     f"display_name '{display_name}' conflicts, using '{athlete_name}'")
                 display_name = athlete_name
@@ -96,8 +96,7 @@ class AthleteSync(BaseSync):
                 athlete.display_name = unambiguous_display_name()
         except:
             self.logger.exception(
-                "Athlete name disambiguation error for {}".format(
-                    strava_athlete.id),
+                f"Athlete name disambiguation error for {strava_athlete.id}",
                 exc_info=True)
             athlete.display_name = athlete_name
         finally:
