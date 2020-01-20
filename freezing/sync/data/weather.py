@@ -126,10 +126,6 @@ class WeatherSync(BaseSync):
 
                 self.logger.debug("Ride weather: {0}".format(rw.__dict__))
 
-                # ride.weather_fetched = True  # (We don't have such an attribute, actually.)
-                # (We get this from the activity now.)
-                # ride.timezone = hist.date.tzinfo.zone
-
                 sess.add(rw)
                 sess.flush()
 
