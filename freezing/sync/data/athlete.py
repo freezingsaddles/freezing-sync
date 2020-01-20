@@ -80,15 +80,19 @@ class AthleteSync(BaseSync):
                        .count() > 0
 
         def unambiguous_display_name() -> str:
-            display_name = athlete_name[:(2 + athlete_name.index(' '))]
-            return display_name \
-                if not already_exists(display_name) \
-                else athlete_name
+            display_name = \
+                f'{strava_athlete.firstname} {strava_athlete.lastname[0]}'
+            if (already_exists(display_name):
+                self.logger.info(
+                    f"display_name '{display_name}' conflicts, using '{athlete_name}'")
+                display_name = athlete_name
+            return display_name
 
         # Only update the display name if it is either:
         # a new athlete, or the athlete name has changed
         try:
             if athlete_name != athlete.name:
+                self.logger.info( f"Athlete '{athlete_name}' was renamed '{athlete.name}'")
                 athlete.display_name = unambiguous_display_name()
         except:
             self.logger.exception(
