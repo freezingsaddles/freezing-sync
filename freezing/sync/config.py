@@ -28,8 +28,8 @@ class Config:
     STRAVA_CLIENT_SECRET = env('STRAVA_CLIENT_SECRET')
     STRAVA_ACTIVITY_CACHE_DIR = env('STRAVA_ACTIVITY_CACHE_DIR', default='/data/cache/activities')
 
-    WUNDERGROUND_API_KEY = env('WUNDERGROUND_API_KEY')
-    WUNDERGROUND_CACHE_DIR = env('WUNDERGROUND_CACHE_DIR', default='/data/cache/weather')
+    DARK_SKY_API_KEY = env('DARK_SKY_API_KEY')
+    DARK_SKY_CACHE_DIR = env('DARK_SKY_CACHE_DIR', default='/data/cache/weather')
 
     COMPETITION_TEAMS = env('TEAMS', cast=list, subcast=int, default=[])
     OBSERVER_TEAMS = env('OBSERVER_TEAMS', cast=list, subcast=int, default=[])

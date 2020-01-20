@@ -16,8 +16,8 @@ This component is designed to run as a container and should be configured with e
 - `SQLALCHEMY_URL`: The URL to the database.
 - `STRAVA_CLIENT_ID`: The ID of the Strava application.
 - `STRAVA_CLIENT_SECRET`: Secret key for the app (available from App settings page in Strava)
-- `WUNDERGROUND_API_KEY`: The key to your wunderground.com development account.
-- `WUNDERGROUND_CACHE_DIR`: The directory for wunderground.com cache files
+- `DARK_SKY_API_KEY`: The key to your darksky.net development account.
+- `DARK_SKY_CACHE_DIR`: The directory for darksky.net cache files
 - `TEAMS`: A comma-separated list of team (Strava club) IDs for the competition. = env('TEAMS', cast=list, subcast=int, default=[])
 - `OBSERVER_TEAMS`: Comma-separated list of any teams that are just observing, not playing (they can get their overall stats included, but won't be part of leaderboards)
 - `START_DATE`: The beginning of the competition.
@@ -32,7 +32,21 @@ If you are running this component locally for development/debugging, you may set
 APP_SETTINGS=local.cfg freezing-sync
 ```
 
+You can run individual sync commands too:
+```bash
+APP_SETTINGS=local.cfg python -m freezing.sync.cli.sync_weather --debug --limit 1
+```
+
 There are a few additional settings you may need (i.e. not to be default) when not running in Docker:
 - `STRAVA_ACTIVITY_CACHE_DIR`: Where to put cached activities (absolute path is a good idea).
-- `WUNDERGROUND_CACHE_DIR`: Similarly, where should weather files be stored?
+- `DARK_SKY_CACHE_DIR`: Similarly, where should weather files be stored?
 `
+
+# Legal
+
+This software is a an [Apache 2.0 Licensed](LICENSE), community-driven effort, and as such the contributions are owned by the individual contributors:
+
+Copyright 2018 Hans Lillelid <br>
+Copyright 2020 Richard Bullington-McGuire <br>
+Copyright 2020 Merlin Hughes <br>
+
