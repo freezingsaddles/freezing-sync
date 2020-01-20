@@ -113,8 +113,8 @@ class WeatherSync(BaseSync):
                 rw.ride_windchill_avg = mean([o.apparent_temperature for o in ride_observations])
 
                 # scale the cumulative precipitation over the observation period by the fraction of time spent moving
-                scale = timedelta(hours=len(ride_observations)).total_seconds() / ride.moving_time
-                rw.ride_precip = sum([o.precip_accumulation for o in ride_observations]) / scale
+                scale = ride.moving_time / timedelta(hours=len(ride_observations)).total_seconds()
+                rw.ride_precip = sum([o.precip_accumulation for o in ride_observations]) * scale
                 rw.ride_rain = any([o.precip_type == 'rain' for o in ride_observations])
                 rw.ride_snow = any([o.precip_type == 'snow' for o in ride_observations])
 
