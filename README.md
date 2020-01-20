@@ -41,3 +41,12 @@ There are a few additional settings you may need (i.e. not to be default) when n
 - `STRAVA_ACTIVITY_CACHE_DIR`: Where to put cached activities (absolute path is a good idea).
 - `DARK_SKY_CACHE_DIR`: Similarly, where should weather files be stored?
 `
+
+# Legal
+
+This software is a an [Apache 2.0 Licensed](LICENSE), community-driven effort, and as such the contributions are owned by the individual contributors:
+
+Copyright 2018 Hans Lillelid <br>
+Copyright 2020 Richard Bullington-McGuire <br>
+Copyright 2020 Merlin Hughes <br>
+
