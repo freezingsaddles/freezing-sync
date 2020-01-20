@@ -38,6 +38,7 @@ setup(
         'freezing.sync.data',
         'freezing.sync.utils',
         'freezing.sync.wx',
+        'freezing.sync.wx.darksky',
         'freezing.sync.wx.wunder',
         'freezing.sync.wx.ncdc'
     ],
