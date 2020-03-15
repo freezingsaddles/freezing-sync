@@ -10,7 +10,7 @@ except ImportError:  # for pip <= 9.0.3
 
 from setuptools import setup
 
-version = '1.1.4'
+version = '1.1.5'
 
 long_description = """
 freezing-sync is the component responsible for fetching activities, weather data, etc.
