@@ -1,7 +1,7 @@
 import logging
 import re
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import arrow
 from geoalchemy import WKTSpatialElement
@@ -114,16 +114,17 @@ class ActivitySync(BaseSync):
                 session.add(effort)
                 session.flush()
 
-            # It would appear that Strava has some delayed consistency, and occasionally no efforts are returned
-            # on an initial apparently-successful sync, so try at least _MAX_EFFORT_RESYNCS more times to fetch,
-            # in the hope that efforts will subsequently appear. Some rides, of course, have no efforts.
-            _MAX_EFFORT_RESYNCS=2
+            # It would appear that Strava has some delayed consistency. Sometimes, no efforts are returned
+            # and sometimes partial attempts are returned, so use an exponential backoff to re-fetch every
+            # activity at least _MAX_EFFORT_RESYNCS times over an extended period of time.
+            _MAX_EFFORT_RESYNCS=3
 
             sync_count = ride.resync_count or 0
-            if len(strava_activity.segment_efforts) > 0 or sync_count > _MAX_EFFORT_RESYNCS:
+            if sync_count > _MAX_EFFORT_RESYNCS:
                 ride.efforts_fetched = True
             else:
                 ride.resync_count = 1 + sync_count
+                ride.resync_date = datetime.now() + timedelta(hours=6 ** sync_count)  # 1, 6, 36 hours
 
         except:
             self.logger.exception("Error adding effort for ride: {0}".format(ride))
@@ -237,9 +238,9 @@ class ActivitySync(BaseSync):
         q = q.filter(Ride.private==False)
 
         if not rewrite:
-            no_detail = Ride.detail_fetched==False
-            no_efforts = Ride.efforts_fetched==False
-            q = q.filter(no_detail | no_efforts)
+            no_detail = Ride.detail_fetched == False
+            resync_efforts = (Ride.efforts_fetched == False) & (Ride.resync_date <= datetime.now())
+            q = q.filter(no_detail | resync_efforts)
 
         if athlete_id:
             self.logger.info("Filtering activity details for {}".format(athlete_id))
@@ -259,7 +260,7 @@ class ActivitySync(BaseSync):
 
                 af = CachingActivityFetcher(cache_basedir=config.STRAVA_ACTIVITY_CACHE_DIR, client=client)
 
-                # If I already fetched this ride, there must be some reason to not trust the data so bypass the cache
+                # If I already fetched this ride then this is a resync looking for missing data so bypass the cache
                 bypass_cache = ride.detail_fetched
 
                 strava_activity = af.fetch(athlete_id=ride.athlete_id, object_id=ride.id,
