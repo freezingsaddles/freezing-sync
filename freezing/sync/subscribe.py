@@ -17,8 +17,9 @@ from stravalib.exc import ObjectNotFound
 
 
 class ActivityUpdateSubscriber:
-
-    def __init__(self, beanstalk_client: greenstalk.Client, shutdown_event: threading.Event):
+    def __init__(
+        self, beanstalk_client: greenstalk.Client, shutdown_event: threading.Event
+    ):
         self.client = beanstalk_client
         self.shutdown_event = shutdown_event
         self.logger = logging.getLogger(__name__)
@@ -32,28 +33,44 @@ class ActivityUpdateSubscriber:
 
             athlete: Athlete = session.query(Athlete).get(message.athlete_id)
             if not athlete:
-                self.logger.warning("Athlete {} not found in database, "
-                                    "ignoring activity update message {}".format(message.athlete_id,
-                                                                                 message))
+                self.logger.warning(
+                    "Athlete {} not found in database, "
+                    "ignoring activity update message {}".format(
+                        message.athlete_id, message
+                    )
+                )
                 return  # Makes the else a little unnecessary, but reads easier.
             try:
                 if message.operation is AspectType.delete:
-                    statsd.increment('strava.activity.delete', tags=['team:{}'.format(athlete.team_id)])
-                    self.activity_sync.delete_activity(athlete_id=message.athlete_id,
-                                                       activity_id=message.activity_id)
+                    statsd.increment(
+                        "strava.activity.delete",
+                        tags=["team:{}".format(athlete.team_id)],
+                    )
+                    self.activity_sync.delete_activity(
+                        athlete_id=message.athlete_id, activity_id=message.activity_id
+                    )
 
                 elif message.operation is AspectType.update:
-                    statsd.increment('strava.activity.update', tags=['team:{}'.format(athlete.team_id)])
-                    self.activity_sync.fetch_and_store_activity_detail(athlete_id=message.athlete_id,
-                                                                       activity_id=message.activity_id)
+                    statsd.increment(
+                        "strava.activity.update",
+                        tags=["team:{}".format(athlete.team_id)],
+                    )
+                    self.activity_sync.fetch_and_store_activity_detail(
+                        athlete_id=message.athlete_id, activity_id=message.activity_id
+                    )
                     # (We'll assume the stream doens't need re-fetching.)
 
                 elif message.operation is AspectType.create:
-                    statsd.increment('strava.activity.create', tags=['team:{}'.format(athlete.team_id)])
-                    self.activity_sync.fetch_and_store_activity_detail(athlete_id=message.athlete_id,
-                                                                       activity_id=message.activity_id)
-                    self.streams_sync.fetch_and_store_activity_streams(athlete_id=message.athlete_id,
-                                                                       activity_id=message.activity_id)
+                    statsd.increment(
+                        "strava.activity.create",
+                        tags=["team:{}".format(athlete.team_id)],
+                    )
+                    self.activity_sync.fetch_and_store_activity_detail(
+                        athlete_id=message.athlete_id, activity_id=message.activity_id
+                    )
+                    self.streams_sync.fetch_and_store_activity_streams(
+                        athlete_id=message.athlete_id, activity_id=message.activity_id
+                    )
             except (ActivityNotFound, IneligibleActivity) as x:
                 log.info(str(x))
 
@@ -69,7 +86,9 @@ class ActivityUpdateSubscriber:
                 except (KeyboardInterrupt, SystemExit):
                     raise
                 except greenstalk.TimedOutError:
-                    self.logger.debug("Internal beanstalkd connection timeout; reconnecting.")
+                    self.logger.debug(
+                        "Internal beanstalkd connection timeout; reconnecting."
+                    )
                     continue
                 else:
                     try:
@@ -77,9 +96,13 @@ class ActivityUpdateSubscriber:
                         update = schema.loads(job.body)
                         self.handle_message(update)
                     except:
-                        self.logger.exception("Error procesing message, will requeue w/ delay.")
-                        statsd.increment('strava.webhook.error')
-                        self.client.release(job, delay=20)  # We put it back with a delay
+                        self.logger.exception(
+                            "Error procesing message, will requeue w/ delay."
+                        )
+                        statsd.increment("strava.webhook.error")
+                        self.client.release(
+                            job, delay=20
+                        )  # We put it back with a delay
                     else:
                         self.client.delete(job)
         except (KeyboardInterrupt, SystemExit):
@@ -88,4 +111,3 @@ class ActivityUpdateSubscriber:
             self.logger.exception("Unhandled error in tube subscriber loop, exiting.")
             self.shutdown_event.set()
             raise
-

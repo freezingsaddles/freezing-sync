@@ -17,18 +17,31 @@ from stravalib.exc import Fault
 from stravalib.unithelper import timedelta_to_seconds
 
 from freezing.model import meta
-from freezing.model.orm import Athlete, Ride, RideEffort, RidePhoto, RideError, RideGeo, Team
+from freezing.model.orm import (
+    Athlete,
+    Ride,
+    RideEffort,
+    RidePhoto,
+    RideError,
+    RideGeo,
+    Team,
+)
 
 from freezing.sync.config import config
-from freezing.sync.exc import DataEntryError, CommandError, MultipleTeamsError, NoTeamsError
+from freezing.sync.exc import (
+    DataEntryError,
+    CommandError,
+    MultipleTeamsError,
+    NoTeamsError,
+)
 
 from . import StravaClientForAthlete, BaseSync
 
 
 class AthleteSync(BaseSync):
 
-    name = 'sync-athletes'
-    description = 'Sync athletes.'
+    name = "sync-athletes"
+    description = "Sync athletes."
 
     def sync_athletes(self, max_records: int = None):
 
@@ -51,11 +64,13 @@ class AthleteSync(BaseSync):
                     self.register_athlete(strava_athlete, athlete.access_token)
                     self.register_athlete_team(strava_athlete, athlete)
                 except:
-                    self.logger.warning("Error registering athlete {0}".format(athlete), exc_info=True)
+                    self.logger.warning(
+                        "Error registering athlete {0}".format(athlete), exc_info=True
+                    )
 
-    def register_athlete(self,
-                         strava_athlete: sm.Athlete,
-                         access_token: str) -> Athlete:
+    def register_athlete(
+        self, strava_athlete: sm.Athlete, access_token: str
+    ) -> Athlete:
         """
         Ensure specified athlete is added to database, returns athlete model.
 
@@ -69,22 +84,25 @@ class AthleteSync(BaseSync):
             athlete = Athlete()
 
         athlete.id = strava_athlete.id
-        athlete_name = \
-            f"{strava_athlete.firstname} {strava_athlete.lastname}"
+        athlete_name = f"{strava_athlete.firstname} {strava_athlete.lastname}"
         athlete.profile_photo = strava_athlete.profile
         athlete.access_token = access_token
 
         def already_exists(display_name) -> bool:
-            return session.query(Athlete).filter(Athlete.id != athlete.id) \
-                       .filter(Athlete.display_name == display_name) \
-                       .count() > 0
+            return (
+                session.query(Athlete)
+                .filter(Athlete.id != athlete.id)
+                .filter(Athlete.display_name == display_name)
+                .count()
+                > 0
+            )
 
         def unambiguous_display_name() -> str:
-            display_name = \
-                f"{strava_athlete.firstname} {strava_athlete.lastname[0]}"
-            if (already_exists(display_name)):
+            display_name = f"{strava_athlete.firstname} {strava_athlete.lastname[0]}"
+            if already_exists(display_name):
                 self.logger.info(
-                    f"display_name '{display_name}' conflicts, using '{athlete_name}'")
+                    f"display_name '{display_name}' conflicts, using '{athlete_name}'"
+                )
                 display_name = athlete_name
             return display_name
 
@@ -92,20 +110,24 @@ class AthleteSync(BaseSync):
         # a new athlete, or the athlete name has changed
         try:
             if athlete_name != athlete.name:
-                self.logger.info( f"Athlete '{athlete_name}' was renamed '{athlete.name}'")
+                self.logger.info(
+                    f"Athlete '{athlete_name}' was renamed '{athlete.name}'"
+                )
                 athlete.display_name = unambiguous_display_name()
         except:
             self.logger.exception(
                 f"Athlete name disambiguation error for {strava_athlete.id}",
-                exc_info=True)
+                exc_info=True,
+            )
             athlete.display_name = athlete_name
         finally:
             athlete.name = athlete_name
             session.add(athlete)
         return athlete
 
-
-    def register_athlete_team(self, strava_athlete:sm.Athlete, athlete_model:Athlete) -> Team:
+    def register_athlete_team(
+        self, strava_athlete: sm.Athlete, athlete_model: Athlete
+    ) -> Team:
         """
         Updates db with configured team that matches the athlete's teams.
 
@@ -121,8 +143,9 @@ class AthleteSync(BaseSync):
         """
 
         all_teams = config.COMPETITION_TEAMS
-        self.logger.info("Checking {0!r} against {1!r}".format(
-            strava_athlete.clubs, all_teams))
+        self.logger.info(
+            "Checking {0!r} against {1!r}".format(strava_athlete.clubs, all_teams)
+        )
         try:
             if strava_athlete.clubs is None:
                 raise NoTeamsError(
@@ -131,7 +154,7 @@ class AthleteSync(BaseSync):
                         strava_athlete.firstname,
                         strava_athlete.lastname,
                         "Full Profile Access required",
-                        "Please re-authorize"
+                        "Please re-authorize",
                     )
                 )
             matches = [c for c in strava_athlete.clubs if c.id in all_teams]
@@ -140,27 +163,24 @@ class AthleteSync(BaseSync):
             if len(matches) > 1:
                 # you can be on multiple teams
                 # as long as only one is an official team
-                matches = [c for c in matches
-                           if c.id not in config.OBSERVER_TEAMS]
+                matches = [c for c in matches if c.id not in config.OBSERVER_TEAMS]
             if len(matches) > 1:
-                self.logger.info("Multiple teams matched for {}: {}".format(
-                    strava_athlete,
-                    matches,
-                    ))
+                self.logger.info(
+                    "Multiple teams matched for {}: {}".format(strava_athlete, matches,)
+                )
                 raise MultipleTeamsError(matches)
             if len(matches) == 0:
                 # Fall back to main team if it is the only team they are in
-                matches = [c for c in strava_athlete.clubs
-                           if c.id == config.MAIN_TEAM]
+                matches = [c for c in strava_athlete.clubs if c.id == config.MAIN_TEAM]
             if len(matches) == 0:
                 raise NoTeamsError(
                     "Athlete {0} ({1} {2}): {3} {4}".format(
-                            strava_athlete.id,
-                            strava_athlete.firstname,
-                            strava_athlete.lastname,
-                            "No teams matched ours. Teams defined:",
-                            strava_athlete.clubs,
-                            )
+                        strava_athlete.id,
+                        strava_athlete.firstname,
+                        strava_athlete.lastname,
+                        "No teams matched ours. Teams defined:",
+                        strava_athlete.clubs,
+                    )
                 )
             else:
                 club = matches[0]

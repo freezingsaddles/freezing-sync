@@ -13,16 +13,19 @@ class SyncAthletesScript(BaseCommand):
     membership are kept in sync w/ Strava.)
     """
 
-    name = 'sync-athletes'
+    name = "sync-athletes"
 
-    description = 'Sync all athletes.'
+    description = "Sync all athletes."
 
     def build_parser(self):
         parser = super().build_parser()
 
-        parser.add_argument("--max-records", type=int,
-                            help="Limit number of rides to return.",
-                            metavar="NUM")
+        parser.add_argument(
+            "--max-records",
+            type=int,
+            help="Limit number of rides to return.",
+            metavar="NUM",
+        )
 
         return parser
 
@@ -35,5 +38,5 @@ def main():
     SyncAthletesScript().run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
