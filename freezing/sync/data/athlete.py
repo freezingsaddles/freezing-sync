@@ -2,6 +2,7 @@ import logging
 import re
 from typing import List
 from datetime import datetime
+from pytz import utc
 
 import arrow
 from geoalchemy import WKTSpatialElement
@@ -31,6 +32,10 @@ class AthleteSync(BaseSync):
     description = 'Sync athletes.'
 
     def sync_athletes(self, max_records: int = None):
+        loc_time = utc.localize(datetime.now(), is_dst=None).astimezone(config.TIMEZONE)
+        end_yday = config.END_DATE.timetuple().tm_yday
+        current_yday = loc_time.timetuple().tm_yday
+        all_done = current_yday > end_yday
 
         with meta.transaction_context() as sess:
 
@@ -49,7 +54,8 @@ class AthleteSync(BaseSync):
                     client = StravaClientForAthlete(athlete)
                     strava_athlete = client.get_athlete()
                     self.register_athlete(strava_athlete, athlete.access_token)
-                    self.register_athlete_team(strava_athlete, athlete)
+                    if not all_done:
+                        self.register_athlete_team(strava_athlete, athlete)
                 except:
                     self.logger.warning("Error registering athlete {0}".format(athlete), exc_info=True)
 
