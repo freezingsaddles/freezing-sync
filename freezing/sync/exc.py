@@ -1,4 +1,3 @@
-
 class NoTeamsError(RuntimeError):
     pass
 

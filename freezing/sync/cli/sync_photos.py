@@ -5,8 +5,8 @@ from . import BaseCommand
 
 class SyncPhotosScript(BaseCommand):
 
-    name = 'sync-photos'
-    description = 'Sync ride photos.'
+    name = "sync-photos"
+    description = "Sync ride photos."
 
     def execute(self, args):
 
@@ -18,5 +18,5 @@ def main():
     SyncPhotosScript().run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -31,14 +31,26 @@ class BaseCommand(metaclass=abc.ABCMeta):
 
         log_g = parser.add_mutually_exclusive_group()
 
-        log_g.add_argument("--debug", action="store_true", default=False,
-                           help="Whether to log at debug level.")
+        log_g.add_argument(
+            "--debug",
+            action="store_true",
+            default=False,
+            help="Whether to log at debug level.",
+        )
 
-        log_g.add_argument("--quiet", action="store_true", default=False,
-                           help="Whether to suppress non-error log output.")
+        log_g.add_argument(
+            "--quiet",
+            action="store_true",
+            default=False,
+            help="Whether to suppress non-error log output.",
+        )
 
-        parser.add_argument("--color", action="store_true", default=False,
-                            help="Whether to output logs with color.")
+        parser.add_argument(
+            "--color",
+            action="store_true",
+            default=False,
+            help="Whether to output logs with color.",
+        )
 
         return parser
 
@@ -66,8 +78,11 @@ class BaseCommand(metaclass=abc.ABCMeta):
 
     def run(self, argv=None):
         parser = self.build_parser()
-        assert parser is not None, "{}.build_parser() method did not return a parser object.".format(
-            self.__class__.__name__)
+        assert (
+            parser is not None
+        ), "{}.build_parser() method did not return a parser object.".format(
+            self.__class__.__name__
+        )
 
         args = parser.parse_args(argv)
 
