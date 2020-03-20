@@ -1,6 +1,7 @@
 import os
 import logging
-from datetime import timedelta
+from datetime import timedelta, tzinfo
+import pytz
 from typing import List
 from datadog import initialize, DogStatsd
 
@@ -39,6 +40,12 @@ class Config:
 
     START_DATE = env("START_DATE", postprocessor=lambda val: arrow.get(val).datetime)
     END_DATE = env("END_DATE", postprocessor=lambda val: arrow.get(val).datetime)
+
+    TIMEZONE: tzinfo = env(
+        "TIMEZONE",
+        default="America/New_York",
+        postprocessor=lambda val: pytz.timezone(val),
+    )
 
     UPLOAD_GRACE_PERIOD: timedelta = env(
         "UPLOAD_GRACE_PERIOD_DAYS",

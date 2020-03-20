@@ -43,6 +43,11 @@ class AthleteSync(BaseSync):
     name = "sync-athletes"
     description = "Sync athletes."
 
+    def all_done():
+        loc_time = datetime.now(config.TIMEZONE)
+        end_time = config.END_DATE
+        return loc_time > end_time
+
     def sync_athletes(self, max_records: int = None):
 
         with meta.transaction_context() as sess:
@@ -62,7 +67,8 @@ class AthleteSync(BaseSync):
                     client = StravaClientForAthlete(athlete)
                     strava_athlete = client.get_athlete()
                     self.register_athlete(strava_athlete, athlete.access_token)
-                    self.register_athlete_team(strava_athlete, athlete)
+                    if not self.all_done():
+                        self.register_athlete_team(strava_athlete, athlete)
                 except:
                     self.logger.warning(
                         "Error registering athlete {0}".format(athlete), exc_info=True
