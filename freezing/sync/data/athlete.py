@@ -67,7 +67,7 @@ class AthleteSync(BaseSync):
                     client = StravaClientForAthlete(athlete)
                     strava_athlete = client.get_athlete()
                     self.register_athlete(strava_athlete, athlete.access_token)
-                    if not all_done():
+                    if not self.all_done():
                         self.register_athlete_team(strava_athlete, athlete)
                 except:
                     self.logger.warning(
