@@ -43,7 +43,7 @@ class AthleteSync(BaseSync):
     name = "sync-athletes"
     description = "Sync athletes."
 
-    def all_done():
+    def all_done(self):
         loc_time = datetime.now(config.TIMEZONE)
         end_time = config.END_DATE
         return loc_time > end_time
