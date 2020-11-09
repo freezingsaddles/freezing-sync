@@ -2,13 +2,14 @@ import logging
 from datetime import timedelta
 from decimal import Decimal
 from statistics import mean
+from pytz import timezone
 
 from sqlalchemy import text
 
 from freezing.model import meta, orm
 
 from freezing.sync.utils.wktutils import parse_point_wkt
-from freezing.sync.wx.darksky.api import HistoDarkSky
+from freezing.sync.wx.climacell.api import HistoClimaCell
 
 from freezing.sync.config import config
 
@@ -51,9 +52,9 @@ class WeatherSync(BaseSync):
             """
         )
 
-        dark_sky = HistoDarkSky(
-            api_key=config.DARK_SKY_API_KEY,
-            cache_dir=config.DARK_SKY_CACHE_DIR,
+        climacell = HistoClimaCell(
+            api_key=config.CLIMACELL_API_KEY,
+            cache_dir=config.CLIMACELL_CACHE_DIR,
             cache_only=cache_only,
             logger=self.logger,
         )
@@ -88,29 +89,28 @@ class WeatherSync(BaseSync):
                     )
                 )
 
-                hist = dark_sky.histo_forecast(
-                    time=ride.start_date, latitude=lat, longitude=lon
-                )
-
-                self.logger.debug("Got response in timezone {0}".format(hist.timezone))
-
-                ride_start = ride.start_date.replace(tzinfo=hist.timezone)
+                ride_start = ride.start_date.replace(tzinfo=timezone(ride.timezone))
                 ride_end = ride_start + timedelta(seconds=ride.elapsed_time)
+
+                hist = climacell.histo_forecast(
+                    time=ride_start, latitude=lat, longitude=lon
+                )
 
                 # NOTE: if elapsed_time is significantly more than moving_time then we need to assume
                 # that the rider wasn't actually riding for this entire time (and maybe just grab temps closest to start of
                 # ride as opposed to averaging observations during ride.
 
                 ride_observations = [
-                    d for d in hist.hourly if ride_start <= d.time <= ride_end
+                    o for o in hist.observations if ride_start <= o.time <= ride_end
                 ]
 
                 start_obs = min(
-                    hist.hourly,
-                    key=lambda d: abs((d.time - ride_start).total_seconds()),
+                    hist.observations,
+                    key=lambda o: abs((o.time - ride_start).total_seconds()),
                 )
                 end_obs = min(
-                    hist.hourly, key=lambda d: abs((d.time - ride_end).total_seconds())
+                    hist.observations,
+                    key=lambda o: abs((o.time - ride_end).total_seconds())
                 )
 
                 if len(ride_observations) <= 2:
@@ -141,20 +141,14 @@ class WeatherSync(BaseSync):
                     [o.apparent_temperature for o in ride_observations]
                 )
 
-                # scale the cumulative precipitation over the observation period by the fraction of time spent moving
-                scale = (
-                    ride.moving_time
-                    / timedelta(hours=len(ride_observations)).total_seconds()
-                )
-                rw.ride_precip = (
-                    sum([o.precip_accumulation for o in ride_observations]) * scale
-                )
+                # take the average precipitation rate in inches per hour and scale by ride time
+                precip_rate = mean([o.precip_rate for o in ride_observations])
+                rw.ride_precip = (precip_rate * ride.elapsed_time / 3600)
                 rw.ride_rain = any([o.precip_type == "rain" for o in ride_observations])
                 rw.ride_snow = any([o.precip_type == "snow" for o in ride_observations])
 
                 rw.day_temp_min = hist.daily.temperature_min
                 rw.day_temp_max = hist.daily.temperature_max
-
                 rw.sunrise = hist.daily.sunrise_time.time()
                 rw.sunset = hist.daily.sunset_time.time()
 

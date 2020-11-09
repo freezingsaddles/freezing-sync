@@ -31,8 +31,8 @@ class Config:
         "STRAVA_ACTIVITY_CACHE_DIR", default="/data/cache/activities"
     )
 
-    DARK_SKY_API_KEY = env("DARK_SKY_API_KEY")
-    DARK_SKY_CACHE_DIR = env("DARK_SKY_CACHE_DIR", default="/data/cache/weather")
+    CLIMACELL_API_KEY = env("CLIMACELL_API_KEY")
+    CLIMACELL_CACHE_DIR = env("CLIMACELL_CACHE_DIR", default="/data/cache/weather")
 
     COMPETITION_TEAMS = env("TEAMS", cast=list, subcast=int, default=[])
     OBSERVER_TEAMS = env("OBSERVER_TEAMS", cast=list, subcast=int, default=[])

@@ -16,8 +16,8 @@ This component is designed to run as a container and should be configured with e
 - `SQLALCHEMY_URL`: The URL to the database.
 - `STRAVA_CLIENT_ID`: The ID of the Strava application.
 - `STRAVA_CLIENT_SECRET`: Secret key for the app (available from App settings page in Strava)
-- `DARK_SKY_API_KEY`: The key to your darksky.net development account.
-- `DARK_SKY_CACHE_DIR`: The directory for darksky.net cache files
+- `CLIMACELL_API_KEY`: The key to your climacell.co development account.
+- `CLIMACELL_CACHE_DIR`: The directory for climacell.co cache files
 - `TEAMS`: A comma-separated list of team (Strava club) IDs for the competition. = env('TEAMS', cast=list, subcast=int, default=[])
 - `OBSERVER_TEAMS`: Comma-separated list of any teams that are just observing, not playing (they can get their overall stats included, but won't be part of leaderboards)
 - `START_DATE`: The beginning of the competition.
@@ -39,7 +39,7 @@ APP_SETTINGS=local.cfg python -m freezing.sync.cli.sync_weather --debug --limit 
 
 There are a few additional settings you may need (i.e. not to be default) when not running in Docker:
 - `STRAVA_ACTIVITY_CACHE_DIR`: Where to put cached activities (absolute path is a good idea).
-- `DARK_SKY_CACHE_DIR`: Similarly, where should weather files be stored?
+- `CLIMACELL_CACHE_DIR`: Similarly, where should weather files be stored?
 `
 
 # Legal
