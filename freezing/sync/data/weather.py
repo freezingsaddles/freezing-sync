@@ -2,13 +2,14 @@ import logging
 from datetime import timedelta
 from decimal import Decimal
 from statistics import mean
+from pytz import timezone, utc
 
 from sqlalchemy import text
 
 from freezing.model import meta, orm
 
 from freezing.sync.utils.wktutils import parse_point_wkt
-from freezing.sync.wx.darksky.api import HistoDarkSky
+from freezing.sync.wx.openweathermap.api import HistoOpenWeatherMap
 
 from freezing.sync.config import config
 
@@ -51,9 +52,9 @@ class WeatherSync(BaseSync):
             """
         )
 
-        dark_sky = HistoDarkSky(
-            api_key=config.DARK_SKY_API_KEY,
-            cache_dir=config.DARK_SKY_CACHE_DIR,
+        owm = HistoOpenWeatherMap(
+            api_key=config.OPENWEATHERMAP_API_KEY,
+            cache_dir=config.OPENWEATHERMAP_CACHE_DIR,
             cache_only=cache_only,
             logger=self.logger,
         )
@@ -73,7 +74,6 @@ class WeatherSync(BaseSync):
             )
 
             try:
-
                 start_geo_wkt = meta.scoped_session().scalar(ride.geo.start_geo.wkt)
                 point = parse_point_wkt(start_geo_wkt)
 
@@ -88,29 +88,39 @@ class WeatherSync(BaseSync):
                     )
                 )
 
-                hist = dark_sky.histo_forecast(
-                    time=ride.start_date, latitude=lat, longitude=lon
-                )
-
-                self.logger.debug("Got response in timezone {0}".format(hist.timezone))
-
-                ride_start = ride.start_date.replace(tzinfo=hist.timezone)
+                ride_start = timezone(ride.timezone).localize(ride.start_date)
                 ride_end = ride_start + timedelta(seconds=ride.elapsed_time)
 
-                # NOTE: if elapsed_time is significantly more than moving_time then we need to assume
-                # that the rider wasn't actually riding for this entire time (and maybe just grab temps closest to start of
-                # ride as opposed to averaging observations during ride.
+                hist = owm.histo_forecast(
+                    time=ride_start, latitude=lat, longitude=lon
+                )
+                observations = hist.observations
+
+                # OpenWeatherMap gives data in 24-hour blocks measured in UTC, so
+                # a late evening ride may well span two "days" of weather data.
+
+                # There's no great solution to this, so we take daily information
+                # from the UTC day of the start of the ride and optionally pull additional
+                # hourly information from the UTC day of the end of the ride.
+
+                if ride_end.astimezone(utc).day > ride_start.astimezone(utc).day:
+                    self.logger.debug("Fetching second date because of UTC overflow")
+                    hist2 = owm.histo_forecast(
+                        time=ride_end, latitude=lat, longitude=lon
+                    )
+                    observations = observations + hist2.observations
 
                 ride_observations = [
-                    d for d in hist.hourly if ride_start <= d.time <= ride_end
+                    o for o in observations if ride_start <= o.time <= ride_end
                 ]
 
                 start_obs = min(
-                    hist.hourly,
-                    key=lambda d: abs((d.time - ride_start).total_seconds()),
+                    observations,
+                    key=lambda o: abs((o.time - ride_start).total_seconds()),
                 )
                 end_obs = min(
-                    hist.hourly, key=lambda d: abs((d.time - ride_end).total_seconds())
+                    observations,
+                    key=lambda o: abs((o.time - ride_end).total_seconds())
                 )
 
                 if len(ride_observations) <= 2:
@@ -141,20 +151,14 @@ class WeatherSync(BaseSync):
                     [o.apparent_temperature for o in ride_observations]
                 )
 
-                # scale the cumulative precipitation over the observation period by the fraction of time spent moving
-                scale = (
-                    ride.moving_time
-                    / timedelta(hours=len(ride_observations)).total_seconds()
-                )
-                rw.ride_precip = (
-                    sum([o.precip_accumulation for o in ride_observations]) * scale
-                )
-                rw.ride_rain = any([o.precip_type == "rain" for o in ride_observations])
-                rw.ride_snow = any([o.precip_type == "snow" for o in ride_observations])
+                # take the average precipitation rate in inches per hour and scale by ride time
+                precip_rate = mean([(o.rain + o.snow) for o in ride_observations])
+                rw.ride_precip = (precip_rate * ride.elapsed_time / 3600)
+                rw.ride_rain = any([o.rain > 0 for o in ride_observations])
+                rw.ride_snow = any([o.snow > 0 for o in ride_observations])
 
                 rw.day_temp_min = hist.daily.temperature_min
                 rw.day_temp_max = hist.daily.temperature_max
-
                 rw.sunrise = hist.daily.sunrise_time.time()
                 rw.sunset = hist.daily.sunset_time.time()
 
