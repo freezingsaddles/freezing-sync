@@ -1,6 +1,7 @@
 import os
 
 from datetime import datetime
+from pytz import utc
 from logging import Logger, getLogger
 
 from json import dumps, load, loads
@@ -47,20 +48,25 @@ class HistoClimaCell(object):
         )
 
     def _forecast(self, time: datetime, latitude: float, longitude: float):
-        start_time = time.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_time = time.replace(hour=23, minute=59, second=59, microsecond=0)
+        start_time = time.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(utc)
+        end_time = time.replace(hour=23, minute=59, second=59, microsecond=0).astimezone(utc)
+        query_params = {
+            "lat": latitude,
+            "lon": longitude,
+            "start_time": start_time.isoformat(),
+            "end_time": end_time.isoformat(),
+            "unit_system": "us",
+            "fields": "precipitation,precipitation_type,temp,feels_like"
+        }
+        self.logger.debug(f"Query parameters: {query_params}")
         response = get(
             url="https://api.climacell.co/v3/weather/historical/station",
-            params={
-                "lat": latitude,
-                "lon": longitude,
-                "start_time": start_time.isoformat(),
-                "end_time": end_time.isoformat(),
-                "unit_system": "us",
-                "fields": "precipitation,precipitation_type,temp,feels_like"
+            params=query_params,
+            headers={
+                "Accept-Encoding": "gzip",
+                "ApiKey": self.api_key
             },
-            headers={"Accept-Encoding": "gzip"},
-            timeout=15,
+            timeout=60,  # yes, it can be quite slow, our cache helps a lot
         )
         if response.status_code is not 200:
             raise HTTPError(

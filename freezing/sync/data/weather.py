@@ -74,6 +74,12 @@ class WeatherSync(BaseSync):
             )
 
             try:
+                # Because we cache daily data rather than pulling the weather data between
+                # ride start and ride end, this just does not even consider handling a ride
+                # that starts before and ends after midnight, it will just pull data for the
+                # start day and use what data it gets. Doing better would, frankly, be hard
+                # because we still want the daily low/high/sunrise/sunset which is then
+                # ambiguous.
 
                 start_geo_wkt = meta.scoped_session().scalar(ride.geo.start_geo.wkt)
                 point = parse_point_wkt(start_geo_wkt)
@@ -89,12 +95,21 @@ class WeatherSync(BaseSync):
                     )
                 )
 
-                ride_start = ride.start_date.replace(tzinfo=timezone(ride.timezone))
+                ride_start = timezone(ride.timezone).localize(ride.start_date)
                 ride_end = ride_start + timedelta(seconds=ride.elapsed_time)
 
                 hist = climacell.histo_forecast(
                     time=ride_start, latitude=lat, longitude=lon
                 )
+
+                self.logger.info(
+                    f"Start: {ride_start.isoformat()}, End: {ride_end.isoformat()}"
+                )
+                self.logger.info(
+                    f"Sunup: {hist.daily.sunrise_time.isoformat()}, down: {hist.daily.sunset_time.isoformat()}"
+                )
+                for o in hist.observations:
+                    self.logger.info(f"{o.time} - {o.temperature} - {o.precip_rate} - {o.precip_type}")
 
                 # NOTE: if elapsed_time is significantly more than moving_time then we need to assume
                 # that the rider wasn't actually riding for this entire time (and maybe just grab temps closest to start of
