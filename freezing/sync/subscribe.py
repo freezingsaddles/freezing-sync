@@ -97,11 +97,11 @@ class ActivityUpdateSubscriber:
                         self.handle_message(update)
                     except:
                         self.logger.exception(
-                            "Error procesing message, will requeue w/ delay."
+                            "Error processing message, will requeue w/ delay."
                         )
                         statsd.increment("strava.webhook.error")
                         self.client.release(
-                            job, delay=20
+                            job, delay=300
                         )  # We put it back with a delay
                     else:
                         self.client.delete(job)
