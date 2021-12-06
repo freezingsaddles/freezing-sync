@@ -1,58 +1,20 @@
-# BUILD
-# =====
-
-FROM ubuntu:xenial as buildstep
+FROM python:3.7-alpine
 LABEL maintainer="Richard Bullington-McGuire <richard@obscure.org>"
-
-COPY resources/docker/sources.list /etc/apt/sources.list
-RUN apt-get update
-
-RUN apt-get install -y software-properties-common
-RUN add-apt-repository -y ppa:deadsnakes/ppa
-RUN apt-get update
-
-RUN apt-get install -y python3.6 python3.6-dev curl build-essential git
-
-RUN mkdir -p /build/wheels
-RUN curl https://bootstrap.pypa.io/get-pip.py | python3.6
-
-RUN pip3 install --upgrade pip setuptools wheel
-
+RUN apk update
+RUN apk add py3-mysqlclient git build-base
+RUN addgroup -S freezing && adduser -S -G freezing freezing
+RUN pip3 install --upgrade pip
 ADD requirements.txt /tmp/requirements.txt
-RUN pip3 wheel -r /tmp/requirements.txt --wheel-dir=/build/wheels
-
-# Now build the wheel for this project too.
+RUN pip3 install -r /tmp/requirements.txt
+RUN apk del git build-base
 ADD . /app
 WORKDIR /app
 
-RUN python3.6 setup.py bdist_wheel -d /build/wheels
-
-
-# DEPLOY
-# =====
-
-FROM ubuntu:xenial as deploystep
-LABEL maintainer="Richard Bullington-McGuire <richard@obscure.org>"
-
-COPY resources/docker/sources.list /etc/apt/sources.list
-
-RUN apt-get update \
-  && apt-get install -y software-properties-common curl \
-  && add-apt-repository -y ppa:deadsnakes/ppa \
-  && apt-get update \
-  && apt-get install -y python3.6 --no-install-recommends \
-  && apt-get clean \
-  && curl https://bootstrap.pypa.io/get-pip.py | python3.6 \
-  && pip3 install --upgrade pip setuptools wheel \
-  && rm -rf /var/lib/apt/lists/*
-
 RUN mkdir -p /data/cache/activities
 RUN mkdir -p /data/cache/weather
+RUN chown freezing:freezing /data/cache/activities
 
 VOLUME /data
-
-COPY --from=buildstep /build/wheels /tmp/wheels
-
-RUN pip3 install /tmp/wheels/*
-
+# We should activate this - but need to make sure the cache still works
+#USER freezing
 CMD freezing-sync

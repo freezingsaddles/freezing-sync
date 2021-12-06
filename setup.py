@@ -10,7 +10,7 @@ except ImportError:  # for pip <= 9.0.3
 
 from setuptools import setup
 
-version = '1.1.5'
+version = '1.1.6'
 
 long_description = """
 freezing-sync is the component responsible for fetching activities, weather data, etc.
@@ -21,7 +21,14 @@ install_reqs = parse_requirements(os.path.join(os.path.dirname(__file__), 'requi
 
 # reqs is a list of requirement
 # e.g. ['django==1.5.1', 'mezzanine==1.4.6']
-reqs = [str(ir.req) for ir in install_reqs]
+# Without the try below this may fail with:
+#  AttributeError: 'ParsedRequirement' object has no attribute 'req'
+# Thanks Mehant Kammakomati and Stack Overflow for the fix: https://stackoverflow.com/a/62127548
+install_reqs=list(install_reqs)
+try:
+        reqs = [str(ir.req) for ir in install_reqs]
+except:
+        reqs = [str(ir.requirement) for ir in install_reqs]
 
 setup(
     name='freezing-sync',
