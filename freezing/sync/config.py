@@ -63,6 +63,8 @@ class Config:
     DATADOG_HOST = env("DATADOG_HOST", default="datadog.container")
     DATADOG_PORT = env("DATADOG_PORT", cast=int, default=8125)
 
+    REQUEUE_DELAY = env("REQUEUE_DELAY", cast=int, default=300)
+
 
 config = Config()
 

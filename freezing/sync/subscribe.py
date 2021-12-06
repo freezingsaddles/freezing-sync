@@ -12,7 +12,7 @@ from freezing.sync.autolog import log
 from freezing.sync.data.activity import ActivitySync
 from freezing.sync.data.streams import StreamSync
 from freezing.sync.exc import ActivityNotFound, IneligibleActivity
-from freezing.sync.config import statsd
+from freezing.sync.config import statsd, Config
 from stravalib.exc import ObjectNotFound
 
 
@@ -96,12 +96,11 @@ class ActivityUpdateSubscriber:
                         update = schema.loads(job.body)
                         self.handle_message(update)
                     except:
-                        self.logger.exception(
-                            "Error processing message, will requeue w/ delay."
-                        )
+                        msg = "Error processing message, will requeue w/ delay of {} seconds."
+                        self.logger.exception(msg.format(Config.REQUEUE_DELAY))
                         statsd.increment("strava.webhook.error")
                         self.client.release(
-                            job, delay=300
+                            job, delay=Config.REQUEUE_DELAY
                         )  # We put it back with a delay
                     else:
                         self.client.delete(job)
