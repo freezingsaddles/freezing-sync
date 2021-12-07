@@ -1,13 +1,6 @@
 # -*- coding: utf-8 -*-
 import os.path
 
-# Ugh, pip 10 is backward incompatible, but there is a workaround:
-# Thanks Stack Overflow https://stackoverflow.com/a/49867265
-try:  # for pip >= 10
-    from pip._internal.req import parse_requirements
-except ImportError:  # for pip <= 9.0.3
-    from pip.req import parse_requirements
-
 from setuptools import setup
 
 version = '1.1.6'
@@ -16,19 +9,20 @@ long_description = """
 freezing-sync is the component responsible for fetching activities, weather data, etc.
 """
 
-# parse_requirements() returns generator of pip.req.InstallRequirement objects
-install_reqs = parse_requirements(os.path.join(os.path.dirname(__file__), 'requirements.txt'), session=False)
-
-# reqs is a list of requirement
-# e.g. ['django==1.5.1', 'mezzanine==1.4.6']
-# Without the try below this may fail with:
-#  AttributeError: 'ParsedRequirement' object has no attribute 'req'
-# Thanks Mehant Kammakomati and Stack Overflow for the fix: https://stackoverflow.com/a/62127548
-install_reqs=list(install_reqs)
-try:
-        reqs = [str(ir.req) for ir in install_reqs]
-except:
-        reqs = [str(ir.requirement) for ir in install_reqs]
+install_requires=[
+    "envparse",
+    "greenstalk",
+    "stravalib",
+    "PyMySQL",
+    "polyline",
+    "colorlog",
+    "GeoAlchemy",
+    "freezing-model",
+    "APScheduler",
+    "datadog",
+    "requests",
+    "pytz"
+]
 
 setup(
     name='freezing-sync',
@@ -51,7 +45,7 @@ setup(
     ],
     # include_package_data=True,
     # package_data={'stravalib': ['tests/resources/*']},
-    install_requires=reqs,
+    install_requires=install_requires,
     classifiers=[
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: Apache Software License',

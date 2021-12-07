@@ -11,7 +11,7 @@ RUN apt-get install -y software-properties-common
 RUN add-apt-repository -y ppa:deadsnakes/ppa
 RUN apt-get update
 
-RUN apt-get install -y python3.6 python3.6-dev curl build-essential git
+RUN apt-get install -y python3.6 python3.6-dev curl build-essential
 
 RUN mkdir -p /build/wheels
 RUN curl https://bootstrap.pypa.io/get-pip.py | python3.6
