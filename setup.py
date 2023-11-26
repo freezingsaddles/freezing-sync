@@ -40,6 +40,7 @@ setup(
         'freezing.sync.utils',
         'freezing.sync.wx',
         'freezing.sync.wx.darksky',
+        'freezing.sync.wx.visualcrossing',
         'freezing.sync.wx.wunder',
         'freezing.sync.wx.ncdc'
     ],

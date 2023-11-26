@@ -8,13 +8,20 @@ from sqlalchemy import text
 from freezing.model import meta, orm
 
 from freezing.sync.utils.wktutils import parse_point_wkt
-from freezing.sync.wx.darksky.api import HistoDarkSky
+from freezing.sync.wx.visualcrossing.api import HistoVisualCrossing
 
 from freezing.sync.config import config
 
 from freezing.sync.data import BaseSync
 
 
+# We only synchronize weather for yesterday's rides to avoid syncing early in the day and then having
+# no (or forecasted) weather data for the rest of the day in our cache. This means our weather
+# stats are always just up until yesterday. Shrug. We could do better. We also round lat/long
+# to 1 decimal place which is about 10 miles which is terribly imprecise, but our current weather
+# data is also very non hyperlocal and so this is just fine. We also only fetch weather data for
+# the start day of the ride, so an epic century that starts just before midnight will receive no
+# credit for the blizzard that starts at one minute past midnight.
 class WeatherSync(BaseSync):
     """
     Synchronize rides from data with the database.
@@ -51,9 +58,9 @@ class WeatherSync(BaseSync):
             """
         )
 
-        dark_sky = HistoDarkSky(
-            api_key=config.DARK_SKY_API_KEY,
-            cache_dir=config.DARK_SKY_CACHE_DIR,
+        visual_crossing = HistoVisualCrossing(
+            api_key=config.VISUAL_CROSSING_API_KEY,
+            cache_dir=config.VISUAL_CROSSING_CACHE_DIR,
             cache_only=cache_only,
             logger=self.logger,
         )
@@ -74,6 +81,9 @@ class WeatherSync(BaseSync):
 
             try:
 
+                # If you can't reproduce the ancient infrastructure required by all this and so can't run any of the
+                # geoalchemy stuff you can hardcode this to debug
+                # start_geo_wkt = "POINT(-76.96 38.96)"
                 start_geo_wkt = meta.scoped_session().scalar(ride.geo.start_geo.wkt)
                 point = parse_point_wkt(start_geo_wkt)
 
@@ -88,7 +98,7 @@ class WeatherSync(BaseSync):
                     )
                 )
 
-                hist = dark_sky.histo_forecast(
+                hist = visual_crossing.histo_forecast(
                     time=ride.start_date, latitude=lat, longitude=lon
                 )
 
@@ -102,15 +112,15 @@ class WeatherSync(BaseSync):
                 # ride as opposed to averaging observations during ride.
 
                 ride_observations = [
-                    d for d in hist.hourly if ride_start <= d.time <= ride_end
+                    d for d in hist.day.hours if ride_start <= d.time <= ride_end
                 ]
 
                 start_obs = min(
-                    hist.hourly,
+                    hist.day.hours,
                     key=lambda d: abs((d.time - ride_start).total_seconds()),
                 )
                 end_obs = min(
-                    hist.hourly, key=lambda d: abs((d.time - ride_end).total_seconds())
+                    hist.day.hours, key=lambda d: abs((d.time - ride_end).total_seconds())
                 )
 
                 if len(ride_observations) <= 2:
@@ -152,11 +162,11 @@ class WeatherSync(BaseSync):
                 rw.ride_rain = any([o.precip_type == "rain" for o in ride_observations])
                 rw.ride_snow = any([o.precip_type == "snow" for o in ride_observations])
 
-                rw.day_temp_min = hist.daily.temperature_min
-                rw.day_temp_max = hist.daily.temperature_max
+                rw.day_temp_min = hist.day.temperature_min
+                rw.day_temp_max = hist.day.temperature_max
 
-                rw.sunrise = hist.daily.sunrise_time.time()
-                rw.sunset = hist.daily.sunset_time.time()
+                rw.sunrise = hist.day.sunrise.time()
+                rw.sunset = hist.day.sunset.time()
 
                 self.logger.debug("Ride weather: {0}".format(rw.__dict__))
 
