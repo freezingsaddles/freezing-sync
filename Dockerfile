@@ -1,7 +1,7 @@
 # BUILD
 # =====
 
-FROM ubuntu:20.04 as buildstep
+FROM ubuntu:22.04 as buildstep
 LABEL maintainer="Richard Bullington-McGuire <richard@obscure.org>"
 
 RUN apt-get update
@@ -29,7 +29,7 @@ RUN python3 setup.py bdist_wheel -d /build/wheels
 # DEPLOY
 # =====
 
-FROM ubuntu:20.04 as deploystep
+FROM ubuntu:22.04 as deploystep
 LABEL maintainer="Richard Bullington-McGuire <richard@obscure.org>"
 
 RUN apt-get update \
