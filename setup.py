@@ -10,18 +10,18 @@ freezing-sync is the component responsible for fetching activities, weather data
 """
 
 install_req = [
-    "envparse",
-    "greenstalk",
-    "stravalib",
-    "PyMySQL",
-    "polyline",
-    "colorlog",
-    "GeoAlchemy",
-    "freezing-model",
     "APScheduler",
+    "GeoAlchemy",
+    "PyMySQL",
+    "colorlog",
     "datadog",
-    "requests",
+    "envparse",
+    "freezing-model",
+    "greenstalk",
+    "polyline",
     "pytz",
+    "requests",
+    "stravalib",
 ]
 
 setup(
