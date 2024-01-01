@@ -9,7 +9,7 @@ long_description = """
 freezing-sync is the component responsible for fetching activities, weather data, etc.
 """
 
-install_req = [
+install_requires = [
     "APScheduler",
     "GeoAlchemy",
     "PyMySQL",
@@ -45,7 +45,7 @@ setup(
     ],
     # include_package_data=True,
     # package_data={'stravalib': ['tests/resources/*']},
-    install_requires=install_req,
+    install_requires=install_requires,
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "License :: OSI Approved :: Apache Software License",
