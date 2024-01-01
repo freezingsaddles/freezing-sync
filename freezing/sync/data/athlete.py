@@ -14,7 +14,6 @@ from stravalib import unithelper
 
 from stravalib import model as sm
 from stravalib.exc import Fault
-from stravalib.unithelper import timedelta_to_seconds
 
 from freezing.model import meta
 from freezing.model.orm import (

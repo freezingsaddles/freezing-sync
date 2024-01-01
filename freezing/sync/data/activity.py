@@ -14,7 +14,6 @@ from stravalib import unithelper
 from stravalib.exc import ObjectNotFound, AccessUnauthorized, Fault
 
 from stravalib.model import Activity, ActivityPhotoPrimary
-from stravalib.unithelper import timedelta_to_seconds
 
 from freezing.model import meta
 from freezing.model.orm import Athlete, Ride, RideEffort, RidePhoto, RideError, RideGeo
@@ -60,8 +59,8 @@ class ActivitySync(BaseSync):
 
         ride.average_speed = float(unithelper.mph(strava_activity.average_speed))
         ride.maximum_speed = float(unithelper.mph(strava_activity.max_speed))
-        ride.elapsed_time = timedelta_to_seconds(strava_activity.elapsed_time)
-        ride.moving_time = timedelta_to_seconds(strava_activity.moving_time)
+        ride.elapsed_time = strava_activity.elapsed_time.seconds
+        ride.moving_time = strava_activity.moving_time.seconds
 
         location_parts = []
         if strava_activity.location_city:
@@ -120,7 +119,7 @@ class ActivitySync(BaseSync):
                 effort = RideEffort(
                     id=se.id,
                     ride_id=strava_activity.id,
-                    elapsed_time=timedelta_to_seconds(se.elapsed_time),
+                    elapsed_time=se.elapsed_time.seconds,
                     segment_name=se.segment.name,
                     segment_id=se.segment.id,
                 )
