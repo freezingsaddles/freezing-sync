@@ -9,4 +9,4 @@ greenstalk==1.0.1
 polyline==1.4.0
 pytz==2019.3
 requests==2.22.0
-stravalib>=0.10.2
+stravalib==1.2.0
