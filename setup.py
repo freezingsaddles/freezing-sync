@@ -3,7 +3,7 @@ import os.path
 
 from setuptools import setup
 
-version = "1.2.1"
+version = "1.4.4"
 
 long_description = """
 freezing-sync is the component responsible for fetching activities, weather data, etc.
@@ -40,6 +40,7 @@ setup(
         "freezing.sync.utils",
         "freezing.sync.wx",
         "freezing.sync.wx.darksky",
+        "freezing.sync.wx.visualcrossing",
         "freezing.sync.wx.wunder",
         "freezing.sync.wx.ncdc",
     ],
