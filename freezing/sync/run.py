@@ -1,21 +1,12 @@
-import os
-import sys
-import threading
-import enum
-from functools import partial
-from datetime import datetime
-
 import arrow
+import threading
 from apscheduler.schedulers.background import BackgroundScheduler
-from greenstalk import Client, TimedOutError
-
-from freezing.model.monkeypatch import collections
-collections()
+from greenstalk import Client
 
 from freezing.model import init_model
 from freezing.model.msg.mq import DefinedTubes
 
-from freezing.sync.config import config, init_logging, statsd
+from freezing.sync.config import config, init_logging
 from freezing.sync.autolog import log
 
 # from freezing.sync.workflow import configured_publisher
@@ -40,10 +31,12 @@ def main():
     weather_sync = WeatherSync()
     athlete_sync = AthleteSync()
 
-    # Every hour run a sync on the activities for athletes fall into the specified segment
+    # Every hour run a sync on the activities for athletes
+    # falling into the specified segment
     # athlete_id % total_segments == segment
-    # TODO: Probably it would be more prudent to split into 15-minute segments, to match rate limits
-    # Admittedly that will make the time-based segment calculation a little trickier.
+    # TODO: Probably it would be more prudent to split into 15-minute segments,
+    # to match rate limits.  Admittedly that will make the time-based segment
+    # calculation a little trickier.
     def segmented_sync_activities():
         activity_sync.sync_rides_distributed(
             total_segments=4, segment=(arrow.now().hour % 4)
@@ -80,11 +73,12 @@ def main():
     shutdown_monitor.start()
 
     try:
-        # This is here to simulate application activity (which keeps the main thread alive).
+        # This is here to simulate application activity
+        # (which keeps the main thread alive).
         subscriber.run_forever()
     except (KeyboardInterrupt, SystemExit):
         log.info("Exiting on user request.")
-    except:
+    except Exception:
         log.exception("Error running sync/listener.")
     finally:
         shutdown_event.set()
