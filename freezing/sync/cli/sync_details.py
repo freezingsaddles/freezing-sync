@@ -3,7 +3,6 @@ from freezing.sync.data.activity import ActivitySync
 
 
 class SyncActivityDetails(BaseCommand):
-
     name = "sync-activity-detail"
     description = "Sync the activity details JSON."
 

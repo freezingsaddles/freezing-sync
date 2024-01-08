@@ -121,7 +121,6 @@ class CachingAthleteObjectFetcher(metaclass=abc.ABCMeta):
             object_json = None
 
         if object_json is None:
-
             if only_cache:
                 self.logger.info(
                     "[CACHE-MISS] Skipping {} {} "
@@ -171,7 +170,6 @@ class CachingAthleteObjectFetcher(metaclass=abc.ABCMeta):
 
 
 class CachingActivityFetcher(CachingAthleteObjectFetcher):
-
     object_type = "activity"
 
     def download_object_json(
@@ -209,7 +207,6 @@ class CachingActivityFetcher(CachingAthleteObjectFetcher):
 
 
 class CachingStreamFetcher(CachingAthleteObjectFetcher):
-
     object_type = "streams"
 
     def filename(self, *, athlete_id: int, object_id: int):

@@ -14,7 +14,9 @@ class Hour(object):
     source: str  # obs,fcst
 
     def __init__(self, json, date, tz):
-        self.time = datetime.combine(date, time.fromisoformat(json["datetime"]).replace(tzinfo=tz))
+        self.time = datetime.combine(
+            date, time.fromisoformat(json["datetime"]).replace(tzinfo=tz)
+        )
         self.temperature = json["temp"]
         self.apparent_temperature = json["feelslike"]
         precip_types = json.get("precipType", [])  # can be null
@@ -43,8 +45,12 @@ class Day(object):
 
     def __init__(self, json, tz):
         self.date = date.fromisoformat(json["datetime"])
-        self.sunrise = datetime.combine(self.date, time.fromisoformat(json["sunrise"]).replace(tzinfo=tz))
-        self.sunset = datetime.combine(self.date, time.fromisoformat(json["sunset"]).replace(tzinfo=tz))
+        self.sunrise = datetime.combine(
+            self.date, time.fromisoformat(json["sunrise"]).replace(tzinfo=tz)
+        )
+        self.sunset = datetime.combine(
+            self.date, time.fromisoformat(json["sunset"]).replace(tzinfo=tz)
+        )
         self.temperature_min = json["tempmin"]
         self.temperature_max = json["tempmax"]
         self.hours = [Hour(d, self.date, tz) for d in json["hours"]]

@@ -11,14 +11,11 @@ from . import BaseSync
 
 
 class PhotoSync(BaseSync):
-
     name = "sync-photos"
     description = "Sync (non-primary) ride photos."
 
     def sync_photos(self):
-
         with meta.transaction_context() as sess:
-
             q = sess.query(orm.Ride)
             q = q.filter_by(photos_fetched=False, private=False)
 
@@ -76,7 +73,6 @@ class PhotoSync(BaseSync):
         # insta_client = insta.configured_instagram_client()
 
         for activity_photo in activity_photos:
-
             # If it's already in the db, then skip it.
             existing = meta.scoped_session().query(RidePhoto).get(activity_photo.uid)
             if existing:

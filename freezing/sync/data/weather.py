@@ -69,7 +69,6 @@ class WeatherSync(BaseSync):
         num_rides = len(rows)
 
         for i, r in enumerate(rows):
-
             if limit and i >= limit:
                 logging.info("Limit ({0}) reached".format(limit))
                 break
@@ -80,7 +79,6 @@ class WeatherSync(BaseSync):
             )
 
             try:
-
                 # If you can't reproduce the ancient infrastructure required by all this and so can't run any of the
                 # geoalchemy stuff you can hardcode this to debug
                 # start_geo_wkt = "POINT(-76.96 38.96)"
@@ -120,7 +118,8 @@ class WeatherSync(BaseSync):
                     key=lambda d: abs((d.time - ride_start).total_seconds()),
                 )
                 end_obs = min(
-                    hist.day.hours, key=lambda d: abs((d.time - ride_end).total_seconds())
+                    hist.day.hours,
+                    key=lambda d: abs((d.time - ride_end).total_seconds()),
                 )
 
                 if len(ride_observations) <= 2:
