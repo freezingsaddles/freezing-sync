@@ -33,7 +33,7 @@ FROM ubuntu:22.04 as deploystep
 LABEL maintainer="Richard Bullington-McGuire <richard@obscure.org>"
 
 RUN apt-get update \
-  && apt-get install -y software-properties-common curl \
+  && apt-get install -y software-properties-common curl tzdata \
   && apt-get update \
   && apt-get install -y python3 python3-pip --no-install-recommends \
   && apt-get clean \
