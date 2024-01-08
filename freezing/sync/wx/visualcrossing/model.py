@@ -17,7 +17,7 @@ class Hour(object):
         self.time = datetime.combine(date, time.fromisoformat(json["datetime"]).replace(tzinfo=tz))
         self.temperature = json["temp"]
         self.apparent_temperature = json["feelslike"]
-        precip_types = json.get("precipType", [])  # can be null
+        precip_types = json.get("preciptype", [])  # can be null
         # precip is rain plus melted snow which means if it snows then we have to overwrite this value
         # with the actual snowfall in order to avoid double-counting those molecules. we can't record a
         # ride as both rain and snow because then the ride rainfall would count instead the frozen snow
@@ -26,6 +26,10 @@ class Hour(object):
         if "snow" in precip_types:
             self.precip_type = "snow"
             self.precip_accumulation = json.get("snow", 0.0)
+        elif "sleet" in precip_types:
+            self.precip_type = "rain"  # count sleet as rain
+        elif "ice" in precip_types:
+            self.precip_type = "rain"  # count ice as rain
         elif "rain" in precip_types:
             self.precip_type = "rain"
         else:
