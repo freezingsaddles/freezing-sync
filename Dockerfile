@@ -10,7 +10,7 @@ RUN apt-get install -y software-properties-common
 
 RUN apt-get update
 
-RUN apt-get install -y python3-dev python3-pip curl build-essential git
+RUN apt-get install -y python3-dev python3-pip curl build-essential git tzdata
 
 RUN mkdir -p /build/wheels
 

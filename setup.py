@@ -3,7 +3,7 @@ import os.path
 
 from setuptools import setup
 
-version = "1.4.1"
+version = "1.4.2"
 
 long_description = """
 freezing-sync is the component responsible for fetching activities, weather data, etc.
