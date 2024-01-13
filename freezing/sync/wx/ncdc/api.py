@@ -40,7 +40,6 @@ class Fault(Exception):
 
 
 class Client(object):
-
     base_url = urllib.parse.urlparse("http://www.ncdc.noaa.gov/cdo-services/services")
 
     def __init__(self, token, cache_dir=None):
@@ -56,9 +55,9 @@ class Client(object):
         """
         Parses the JSON response from the server, raising a :class:`stravatools.api.Fault` if the
         server returned an error.
-        
+
         :param response: The response JSON
-        :raises Fault: If the response contains an error. 
+        :raises Fault: If the response contains an error.
         """
         if "cdoError" in response:
             raise Fault(response["name"], response["message"])

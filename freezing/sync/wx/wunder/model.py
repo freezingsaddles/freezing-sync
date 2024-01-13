@@ -32,7 +32,7 @@ from pytz import timezone
 
 
 def build_date(dateobj):
-    """ Builds a date from wundergound date structure. """
+    """Builds a date from wundergound date structure."""
     year = int(dateobj["year"])
     mon = int(dateobj["mon"])
     day = int(dateobj["mday"])
@@ -101,7 +101,7 @@ class HistoryDay(object):
         self.observations = []
 
     def find_first_before(self, date):
-        """ Finds the first observation before the specified date. """
+        """Finds the first observation before the specified date."""
         date = date.replace(tzinfo=self.date.tzinfo)
         # Iterate over the observations until the date is later, then return the previous
         assert len(self.observations) > 0
@@ -126,7 +126,7 @@ class HistoryDay(object):
         return prev
 
     def find_next_after(self, date):
-        """ Finds the next observation after the specified date. """
+        """Finds the next observation after the specified date."""
         assert len(self.observations) > 0
         date = date.replace(tzinfo=self.date.tzinfo)
         # Iterate over the observations until the date is later, then return the previous
@@ -179,7 +179,7 @@ class HistoryDay(object):
 
     def find_nearest_observation(self, date):
         """
-        Gets the observation closest in time (before or after) to specified date. 
+        Gets the observation closest in time (before or after) to specified date.
         """
         if date.tzinfo is None:
             date = copy(date).replace(tzinfo=self.date.tzinfo)

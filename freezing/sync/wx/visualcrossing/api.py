@@ -9,6 +9,7 @@ from requests.exceptions import HTTPError
 
 from .model import Forecast
 
+
 class HistoVisualCrossing(object):
     """
     Histomorphic visual crossing. Kinda like animal crossing, but for weather data.

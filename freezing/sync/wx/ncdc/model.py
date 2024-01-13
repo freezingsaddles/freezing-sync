@@ -2,8 +2,7 @@ from dateutil import parser
 
 
 class BaseCollection(object):
-    """
-    """
+    """ """
 
     totalCount = None
 
@@ -17,7 +16,6 @@ class BaseCollection(object):
 
 
 class PagedCollection(object):
-
     pageCount = None
     _page = None
 
@@ -112,7 +110,6 @@ class DesiredObservations(object):
 
 
 class LocationSearchResult(object):
-
     _minDate = None
     _maxDate = None
 

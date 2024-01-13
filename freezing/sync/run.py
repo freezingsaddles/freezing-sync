@@ -17,7 +17,6 @@ from freezing.sync.data.athlete import AthleteSync
 
 
 def main():
-
     init_logging()
     init_model(config.SQLALCHEMY_URL)
 
