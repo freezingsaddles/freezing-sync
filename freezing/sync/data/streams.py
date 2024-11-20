@@ -1,7 +1,5 @@
-import json
 import logging
-import os
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from freezing.model import meta
 from freezing.model.orm import Athlete, Ride, RideTrack

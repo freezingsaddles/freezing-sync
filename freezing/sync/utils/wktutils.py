@@ -1,6 +1,5 @@
 import re
 from collections import namedtuple
-from decimal import Decimal
 
 _point_rx = re.compile("^POINT\((.+)\)$")
 _linestring_rx = re.compile("^LINESTRING\((.+)\)$")

@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta
 
 import arrow
 from freezing.model import meta, orm

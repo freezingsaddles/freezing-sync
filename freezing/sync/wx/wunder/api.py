@@ -4,12 +4,10 @@ Created on Feb 27, 2013
 @author: hans
 """
 
-import functools
 import json
 import logging
 import os
 import time
-from datetime import datetime
 from urllib.parse import urlparse, urlunsplit
 
 import requests
