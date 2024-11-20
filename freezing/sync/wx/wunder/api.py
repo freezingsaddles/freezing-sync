@@ -132,9 +132,9 @@ class Client(object):
         """
         Parses the JSON response from the server, raising a :class:`stravatools.api.Fault` if the
         server returned an error.
-        
+
         :param response: The response JSON
-        :raises Fault: If the response contains an error. 
+        :raises Fault: If the response contains an error.
         """
         if "error" in response["response"]:
             raise Fault(
@@ -186,7 +186,6 @@ class Client(object):
                 time.sleep(self.pause)
 
     def history(self, date, lat=None, lon=None, us_city=None):
-
         latlon_location_param = None
         us_city_location_param = None
 

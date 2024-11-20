@@ -38,7 +38,6 @@ from . import StravaClientForAthlete, BaseSync
 
 
 class AthleteSync(BaseSync):
-
     name = "sync-athletes"
     description = "Sync athletes."
 
@@ -48,9 +47,7 @@ class AthleteSync(BaseSync):
         return loc_time > end_time
 
     def sync_athletes(self, max_records: int = None):
-
         with meta.transaction_context() as sess:
-
             # We iterate over all of our athletes that have access tokens.
             # (We can't fetch anything for those that don't.)
 
@@ -171,7 +168,10 @@ class AthleteSync(BaseSync):
                 matches = [c for c in matches if c.id not in config.OBSERVER_TEAMS]
             if len(matches) > 1:
                 self.logger.info(
-                    "Multiple teams matched for {}: {}".format(strava_athlete, matches,)
+                    "Multiple teams matched for {}: {}".format(
+                        strava_athlete,
+                        matches,
+                    )
                 )
                 raise MultipleTeamsError(matches)
             if len(matches) == 0:
