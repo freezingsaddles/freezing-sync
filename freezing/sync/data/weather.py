@@ -3,16 +3,13 @@ from datetime import timedelta
 from decimal import Decimal
 from statistics import mean
 
+from freezing.model import meta, orm
 from sqlalchemy import text
 
-from freezing.model import meta, orm
-
+from freezing.sync.config import config
+from freezing.sync.data import BaseSync
 from freezing.sync.utils.wktutils import parse_point_wkt
 from freezing.sync.wx.visualcrossing.api import HistoVisualCrossing
-
-from freezing.sync.config import config
-
-from freezing.sync.data import BaseSync
 
 
 # We only synchronize weather for yesterday's rides to avoid syncing early in the day and then having

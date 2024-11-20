@@ -1,40 +1,33 @@
-import logging
-import re
-from typing import List
 from datetime import datetime
 
 import arrow
-from geoalchemy import WKTSpatialElement
-
-from sqlalchemy import and_
-from sqlalchemy.orm import joinedload
-
-from freezing.sync.utils.cache import CachingActivityFetcher
-from stravalib import unithelper
-
-from stravalib import model as sm
-from stravalib.exc import Fault
-
 from freezing.model import meta
 from freezing.model.orm import (
     Athlete,
     Ride,
     RideEffort,
-    RidePhoto,
     RideError,
     RideGeo,
+    RidePhoto,
     Team,
 )
+from geoalchemy import WKTSpatialElement
+from sqlalchemy import and_
+from sqlalchemy.orm import joinedload
+from stravalib import model as sm
+from stravalib import unithelper
+from stravalib.exc import Fault
 
 from freezing.sync.config import config
 from freezing.sync.exc import (
-    DataEntryError,
     CommandError,
+    DataEntryError,
     MultipleTeamsError,
     NoTeamsError,
 )
+from freezing.sync.utils.cache import CachingActivityFetcher
 
-from . import StravaClientForAthlete, BaseSync
+from . import BaseSync, StravaClientForAthlete
 
 
 class AthleteSync(BaseSync):

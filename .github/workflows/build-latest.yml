@@ -1,0 +1,38 @@
+---
+name: Build and Deploy Latest
+
+on:
+  push:
+    branches:
+      - 'master'
+
+jobs:
+
+  build:
+    uses: freezingsaddles/freezing-web/.github/workflows/build-docker.yml@1.4.18
+    concurrency: build-deploy-and-test
+    with:
+      tag: latest
+      repo: freezing-sync
+    secrets: inherit
+
+  deploy:
+    concurrency: build-deploy-and-test
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+
+    - name: install
+      uses: appleboy/ssh-action@v1.1.0
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.KEY }}
+        port: ${{ secrets.PORT }}
+        passphrase: ${{ secrets.PASSPHRASE }}
+        script: |
+          set -euo pipefail
+          cd /opt/compose
+          docker-compose pull freezing-sync
+          docker-compose up -d freezing-sync

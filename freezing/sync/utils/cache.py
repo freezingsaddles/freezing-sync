@@ -2,13 +2,12 @@ import abc
 import json
 import logging
 import os
-from typing import Dict, Any, Type, Optional, List
-
-from stravalib.model import Activity, IdentifiableEntity, Stream
-from stravalib.client import Client
-from stravalib.exc import ObjectNotFound
+from typing import Any, Dict, List, Optional
 
 from freezing.model.orm import Ride
+from stravalib.client import Client
+from stravalib.exc import ObjectNotFound
+from stravalib.model import Activity, IdentifiableEntity, Stream
 
 
 class CachingAthleteObjectFetcher(metaclass=abc.ABCMeta):

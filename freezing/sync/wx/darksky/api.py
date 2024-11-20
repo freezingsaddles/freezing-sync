@@ -1,14 +1,12 @@
 import os
-
 from datetime import datetime
+from json import dumps, load, loads
 from logging import Logger, getLogger
 
-from json import dumps, load, loads
 from requests import get
 from requests.exceptions import HTTPError
 
 from .model import Forecast
-
 
 # there is a nice dark sky library, but it is GPL and thus incompatible.
 # there are also not-so-nice dark sky libraries.

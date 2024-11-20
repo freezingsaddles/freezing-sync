@@ -3,10 +3,10 @@ import logging
 import time
 from typing import Union
 
-from stravalib import Client
-
 from freezing.model import meta
 from freezing.model.orm import Athlete
+from stravalib import Client
+
 from freezing.sync.config import Config
 
 

@@ -1,25 +1,21 @@
-import os
-import json
 import logging
-from typing import Dict, Any, List
-
-from geoalchemy import WKTSpatialElement
-from polyline.codec import PolylineCodec
-from sqlalchemy import update, or_, and_
-from sqlalchemy.orm import joinedload
-
-from freezing.sync.utils.cache import CachingStreamFetcher
-from stravalib.exc import ObjectNotFound
-from stravalib.model import Activity, Stream
+from typing import Dict, List
 
 from freezing.model import meta
 from freezing.model.orm import Athlete, Ride, RideTrack
+from geoalchemy import WKTSpatialElement
+from polyline.codec import PolylineCodec
+from sqlalchemy import and_, or_, update
+from sqlalchemy.orm import joinedload
+from stravalib.exc import ObjectNotFound
+from stravalib.model import Activity, Stream
 
 from freezing.sync.config import config
-from freezing.sync.exc import ConfigurationError, ActivityNotFound
+from freezing.sync.exc import ActivityNotFound, ConfigurationError
 from freezing.sync.utils import wktutils
+from freezing.sync.utils.cache import CachingStreamFetcher
 
-from . import StravaClientForAthlete, BaseSync
+from . import BaseSync, StravaClientForAthlete
 
 
 class StreamSync(BaseSync):

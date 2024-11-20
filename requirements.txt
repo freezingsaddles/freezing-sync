@@ -4,7 +4,6 @@ PyMySQL==1.1.1
 colorlog==4.1.0
 datadog==0.33.0
 envparse==0.2.0
-# This has to be pinned to a specific version to get this to work
 freezing-model @ https://github.com/freezingsaddles/freezing-model/archive/0.8.2.tar.gz
 greenstalk==1.0.1
 polyline==1.4.0

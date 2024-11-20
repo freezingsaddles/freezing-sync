@@ -1,11 +1,14 @@
 """
 Adapted from http://michelanders.blogspot.com/2010/12/calulating-sunrise-and-sunset-in-python.html
 """
+
 from __future__ import division
 
-from math import cos, sin, acos, asin, tan
-from math import degrees as deg, radians as rad
-from datetime import date, datetime, time
+from datetime import datetime, time
+from math import acos, asin, cos
+from math import degrees as deg
+from math import radians as rad
+from math import sin, tan
 
 import pytz
 from dateutil.tz import tzlocal

@@ -1,19 +1,19 @@
-import arrow
 import threading
-from apscheduler.schedulers.background import BackgroundScheduler
-from greenstalk import Client
 
+import arrow
+from apscheduler.schedulers.background import BackgroundScheduler
 from freezing.model import init_model
 from freezing.model.msg.mq import DefinedTubes
+from greenstalk import Client
 
-from freezing.sync.config import config, init_logging
 from freezing.sync.autolog import log
+from freezing.sync.config import config, init_logging
+from freezing.sync.data.activity import ActivitySync
+from freezing.sync.data.athlete import AthleteSync
+from freezing.sync.data.weather import WeatherSync
 
 # from freezing.sync.workflow import configured_publisher
 from freezing.sync.subscribe import ActivityUpdateSubscriber
-from freezing.sync.data.activity import ActivitySync
-from freezing.sync.data.weather import WeatherSync
-from freezing.sync.data.athlete import AthleteSync
 
 
 def main():

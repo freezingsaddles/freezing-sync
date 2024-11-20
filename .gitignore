@@ -1,6 +1,5 @@
-# hidden files
-.*
 # Local config files
+.env*
 *.cfg
 
 /data/
