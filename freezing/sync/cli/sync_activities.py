@@ -1,4 +1,3 @@
-
 import arrow
 from freezing.model import meta, orm
 from pytz import utc
