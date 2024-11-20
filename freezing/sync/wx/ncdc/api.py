@@ -1,11 +1,12 @@
-import os
-import time
+import functools
 import json
 import logging
+import os
+import time
 import urllib.parse
-import functools
-import requests
 from datetime import datetime
+
+import requests
 
 from . import model
 

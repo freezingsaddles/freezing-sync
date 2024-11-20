@@ -3,14 +3,14 @@ Created on Feb 27, 2013
 
 @author: hans
 """
-import os
-import time
+
 import json
 import logging
+import os
+import time
 from urllib.parse import urlparse, urlunsplit
-import functools
+
 import requests
-from datetime import datetime
 
 from .model import HistoryDay
 

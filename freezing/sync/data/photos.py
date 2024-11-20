@@ -1,10 +1,10 @@
-from instagram import InstagramAPIError
-from sqlalchemy import and_
-
 from freezing.model import meta, orm
 
 # from freezing.web.utils.insta import configured_instagram_client, photo_cache_path
 from freezing.model.orm import RidePhoto
+from instagram import InstagramAPIError
+from sqlalchemy import and_
+
 from freezing.sync.data import StravaClientForAthlete
 
 from . import BaseSync

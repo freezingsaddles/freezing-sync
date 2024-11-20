@@ -2,18 +2,17 @@ import logging
 import threading
 
 import greenstalk
-
-from freezing.model.msg.mq import ActivityUpdate, ActivityUpdateSchema
 from freezing.model import meta
+from freezing.model.msg.mq import ActivityUpdate, ActivityUpdateSchema
 from freezing.model.msg.strava import AspectType
 from freezing.model.orm import Athlete
+from stravalib.exc import ObjectNotFound
 
 from freezing.sync.autolog import log
+from freezing.sync.config import Config, statsd
 from freezing.sync.data.activity import ActivitySync
 from freezing.sync.data.streams import StreamSync
 from freezing.sync.exc import ActivityNotFound, IneligibleActivity
-from freezing.sync.config import statsd, Config
-from stravalib.exc import ObjectNotFound
 
 
 class ActivityUpdateSubscriber:

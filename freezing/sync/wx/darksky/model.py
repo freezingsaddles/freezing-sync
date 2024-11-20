@@ -1,6 +1,6 @@
 from datetime import datetime
-from pytz import timezone, utc
 
+from pytz import timezone, utc
 
 # A minimal model with just the data we need.
 

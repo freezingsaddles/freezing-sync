@@ -1,6 +1,6 @@
-from datetime import date, time, datetime
-from pytz import timezone
+from datetime import date, datetime, time
 
+from pytz import timezone
 
 # A minimal model with just the data we need.
 
@@ -28,7 +28,9 @@ class Hour(object):
         if precip_types and "snow" in precip_types:
             self.precip_type = "snow"
             self.precip_accumulation = json.get("snow", 0.0)
-        elif precip_types and ("sleet" in precip_types or "ice" in precip_types or "rain" in precip_types):
+        elif precip_types and (
+            "sleet" in precip_types or "ice" in precip_types or "rain" in precip_types
+        ):
             self.precip_type = "rain"  # count ice and sleet as rain
         else:
             self.precip_type = ""
