@@ -29,7 +29,6 @@ class ActivityUpdateSubscriber:
         self.logger.info("Processing activity update {}".format(message))
 
         with meta.transaction_context() as session:
-
             athlete: Athlete = session.query(Athlete).get(message.athlete_id)
             if not athlete:
                 self.logger.warning(

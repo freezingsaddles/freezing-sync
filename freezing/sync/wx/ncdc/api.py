@@ -41,7 +41,6 @@ class Fault(Exception):
 
 
 class Client(object):
-
     base_url = urllib.parse.urlparse("http://www.ncdc.noaa.gov/cdo-services/services")
 
     def __init__(self, token, cache_dir=None):

@@ -17,7 +17,6 @@ if os.path.exists(envfile):
 
 
 class Config:
-
     DEBUG = env("DEBUG")  # type: bool
     SQLALCHEMY_URL = env("SQLALCHEMY_URL")
     BEANSTALKD_HOST = env("BEANSTALKD_HOST", default="localhost")

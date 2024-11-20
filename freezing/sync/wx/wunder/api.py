@@ -188,7 +188,6 @@ class Client(object):
                 time.sleep(self.pause)
 
     def history(self, date, lat=None, lon=None, us_city=None):
-
         latlon_location_param = None
         us_city_location_param = None
 

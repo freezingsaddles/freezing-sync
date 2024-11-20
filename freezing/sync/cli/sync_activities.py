@@ -57,7 +57,6 @@ class SyncActivitiesScript(BaseCommand):
         return parser
 
     def execute(self, args):
-
         fetcher = ActivitySync(logger=self.logger)
         fetcher.sync_rides(
             start_date=args.start_date,

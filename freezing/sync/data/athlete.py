@@ -34,7 +34,6 @@ from . import BaseSync, StravaClientForAthlete
 
 
 class AthleteSync(BaseSync):
-
     name = "sync-athletes"
     description = "Sync athletes."
 
@@ -44,9 +43,7 @@ class AthleteSync(BaseSync):
         return loc_time > end_time
 
     def sync_athletes(self, max_records: int = None):
-
         with meta.transaction_context() as sess:
-
             # We iterate over all of our athletes that have access tokens.
             # (We can't fetch anything for those that don't.)
 

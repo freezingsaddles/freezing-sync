@@ -21,7 +21,6 @@ from . import BaseSync, StravaClientForAthlete
 
 
 class StreamSync(BaseSync):
-
     name = "sync-activity-streams"
     description = "Sync activity streams (GPS, etc.) JSON."
 
@@ -33,7 +32,6 @@ class StreamSync(BaseSync):
         use_cache: bool = True,
         only_cache: bool = False,
     ):
-
         session = meta.scoped_session()
 
         q = session.query(Ride).options(joinedload(Ride.athlete))
@@ -86,9 +84,7 @@ class StreamSync(BaseSync):
     def fetch_and_store_activity_streams(
         self, *, athlete_id: int, activity_id: int, use_cache: bool = False
     ):
-
         with meta.transaction_context() as session:
-
             self.logger.info(
                 "Fetching activity streams for athlete_id={}, activity_id={}".format(
                     athlete_id, activity_id

@@ -26,7 +26,6 @@ from . import BaseSync, StravaClientForAthlete
 
 
 class ActivitySync(BaseSync):
-
     name = "sync-activity"
     description = "Sync activities."
 
@@ -262,7 +261,6 @@ class ActivitySync(BaseSync):
         use_cache: bool = True,
         only_cache: bool = False,
     ):
-
         session = meta.scoped_session()
 
         q = session.query(Ride)
@@ -341,9 +339,7 @@ class ActivitySync(BaseSync):
     def fetch_and_store_activity_detail(
         self, *, athlete_id: int, activity_id: int, use_cache: bool = False
     ):
-
         with meta.transaction_context() as session:
-
             self.logger.info(
                 "Fetching detailed activity athlete_id={}, activity_id={}".format(
                     athlete_id, activity_id
@@ -620,7 +616,6 @@ class ActivitySync(BaseSync):
             ride = Ride(activity.id)
 
         if new_ride:
-
             # Set the "workflow flags".  These all default to False in the database.  The value of NULL means
             # that the workflow flag does not apply (e.g. do not bother fetching this)
 
@@ -663,7 +658,6 @@ class ActivitySync(BaseSync):
     def _sync_rides(
         self, start_date: datetime, end_date: datetime, athlete, rewrite: bool = False
     ):
-
         sess = meta.scoped_session()
 
         api_ride_entries = self.list_rides(
@@ -830,9 +824,7 @@ class ActivitySync(BaseSync):
         force: bool = False,
         athlete_ids: List[int] = None,
     ):
-
         with meta.transaction_context() as sess:
-
             if start_date is None:
                 start_date = config.START_DATE
 
