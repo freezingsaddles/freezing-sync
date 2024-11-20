@@ -1,15 +1,13 @@
-import os
 import logging
+import os
 from datetime import timedelta, tzinfo
-import pytz
 from typing import List
-from datadog import initialize, DogStatsd
-
-from colorlog import ColoredFormatter
-from envparse import env
 
 import arrow
-
+import pytz
+from colorlog import ColoredFormatter
+from datadog import DogStatsd, initialize
+from envparse import env
 from freezing.model import init_model
 
 envfile = os.environ.get("APP_SETTINGS", os.path.join(os.getcwd(), ".env"))
@@ -32,7 +30,9 @@ class Config:
     )
 
     VISUAL_CROSSING_API_KEY = env("VISUAL_CROSSING_API_KEY")
-    VISUAL_CROSSING_CACHE_DIR = env("VISUAL_CROSSING_CACHE_DIR", default="/data/cache/weather")
+    VISUAL_CROSSING_CACHE_DIR = env(
+        "VISUAL_CROSSING_CACHE_DIR", default="/data/cache/weather"
+    )
 
     COMPETITION_TEAMS = env("TEAMS", cast=list, subcast=int, default=[])
     OBSERVER_TEAMS = env("OBSERVER_TEAMS", cast=list, subcast=int, default=[])

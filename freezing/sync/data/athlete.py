@@ -1,40 +1,36 @@
 import logging
 import re
-from typing import List
 from datetime import datetime
+from typing import List
 
 import arrow
-from geoalchemy import WKTSpatialElement
-
-from sqlalchemy import and_
-from sqlalchemy.orm import joinedload
-
-from freezing.sync.utils.cache import CachingActivityFetcher
-from stravalib import unithelper
-
-from stravalib import model as sm
-from stravalib.exc import Fault
-
 from freezing.model import meta
 from freezing.model.orm import (
     Athlete,
     Ride,
     RideEffort,
-    RidePhoto,
     RideError,
     RideGeo,
+    RidePhoto,
     Team,
 )
+from geoalchemy import WKTSpatialElement
+from sqlalchemy import and_
+from sqlalchemy.orm import joinedload
+from stravalib import model as sm
+from stravalib import unithelper
+from stravalib.exc import Fault
 
 from freezing.sync.config import config
 from freezing.sync.exc import (
-    DataEntryError,
     CommandError,
+    DataEntryError,
     MultipleTeamsError,
     NoTeamsError,
 )
+from freezing.sync.utils.cache import CachingActivityFetcher
 
-from . import StravaClientForAthlete, BaseSync
+from . import BaseSync, StravaClientForAthlete
 
 
 class AthleteSync(BaseSync):
@@ -171,7 +167,10 @@ class AthleteSync(BaseSync):
                 matches = [c for c in matches if c.id not in config.OBSERVER_TEAMS]
             if len(matches) > 1:
                 self.logger.info(
-                    "Multiple teams matched for {}: {}".format(strava_athlete, matches,)
+                    "Multiple teams matched for {}: {}".format(
+                        strava_athlete,
+                        matches,
+                    )
                 )
                 raise MultipleTeamsError(matches)
             if len(matches) == 0:

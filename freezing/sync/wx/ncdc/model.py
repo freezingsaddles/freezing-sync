@@ -2,8 +2,7 @@ from dateutil import parser
 
 
 class BaseCollection(object):
-    """
-    """
+    """ """
 
     totalCount = None
 

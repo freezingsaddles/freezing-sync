@@ -1,13 +1,13 @@
 import os
-
 from datetime import datetime
+from json import dumps, load, loads
 from logging import Logger, getLogger
 
-from json import dumps, load, loads
 from requests import get
 from requests.exceptions import HTTPError
 
 from .model import Forecast
+
 
 class HistoVisualCrossing(object):
     """

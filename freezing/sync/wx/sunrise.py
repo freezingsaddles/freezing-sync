@@ -1,23 +1,26 @@
 """
 Adapted from http://michelanders.blogspot.com/2010/12/calulating-sunrise-and-sunset-in-python.html
 """
+
 from __future__ import division
 
-from math import cos, sin, acos, asin, tan
-from math import degrees as deg, radians as rad
 from datetime import date, datetime, time
+from math import acos, asin, cos
+from math import degrees as deg
+from math import radians as rad
+from math import sin, tan
 
 import pytz
 from dateutil.tz import tzlocal
 
 
 class Sun:
-    """ 
+    """
     Calculate sunrise and sunset based on equations from NOAA
     http://www.srrb.noaa.gov/highlights/sunrise/calcdetails.html
-    
+
     typical use, calculating the sunrise at the present day:
-    
+
     import datetime
     import sunrise
     s = Sun(lat=49,lon=3)
@@ -53,7 +56,7 @@ class Sun:
     def _timefromdecimalday(cls, day):
         """
         returns a datetime.time object.
-        
+
         day is a decimal day between 0.0 and 1.0, e.g. noon = 0.5
         """
         hours = (24 * day) % 24
@@ -66,7 +69,7 @@ class Sun:
 
     def _preptime(self, when):
         """
-        Extract information in a suitable format from when, 
+        Extract information in a suitable format from when,
         a datetime.datetime object.
         """
         # datetime days are numbered in the Gregorian calendar
@@ -87,7 +90,7 @@ class Sun:
         """
         Perform the actual calculations for sunrise, sunset and
         a number of related quantities.
-        
+
         The results are stored in the instance variables
         sunrise_t, sunset_t and solarnoon_t
         """

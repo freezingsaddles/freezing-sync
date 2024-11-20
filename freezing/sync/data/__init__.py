@@ -3,10 +3,10 @@ import logging
 import time
 from typing import Union
 
-from stravalib import Client
-
 from freezing.model import meta
 from freezing.model.orm import Athlete
+from stravalib import Client
+
 from freezing.sync.config import Config
 
 
@@ -16,7 +16,9 @@ class StravaClientForAthlete(Client):
     """
 
     def __init__(
-        self, athlete: Union[int, Athlete], logger: logging.Logger = None,
+        self,
+        athlete: Union[int, Athlete],
+        logger: logging.Logger = None,
     ):
         self.logger = logger or logging.getLogger(__name__)
         assert athlete, "No athlete ID or Athlete object provided."
@@ -49,7 +51,8 @@ class StravaClientForAthlete(Client):
                 # Access token is still valid - no action needed
                 refresh_token = None
                 self.logger.info(
-                    "access token for athlete %s is still valid ", athlete.id,
+                    "access token for athlete %s is still valid ",
+                    athlete.id,
                 )
         elif athlete.access_token is not None:
             # Athlete has an access token but no refresh token yet.
@@ -63,7 +66,9 @@ class StravaClientForAthlete(Client):
         if refresh_token:
             self.logger.info("saving refresh token for athlete %s", athlete.id)
             token_dict = super().refresh_access_token(
-                Config.STRAVA_CLIENT_ID, Config.STRAVA_CLIENT_SECRET, refresh_token,
+                Config.STRAVA_CLIENT_ID,
+                Config.STRAVA_CLIENT_SECRET,
+                refresh_token,
             )
             self.access_token = token_dict["access_token"]
             athlete.access_token = token_dict["access_token"]

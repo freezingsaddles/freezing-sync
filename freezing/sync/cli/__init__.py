@@ -1,10 +1,10 @@
 import abc
-import logging
 import argparse
+import logging
 
 from colorlog import ColoredFormatter
-
 from freezing.model import init_model
+
 from freezing.sync.config import config, init_logging
 from freezing.sync.exc import CommandError
 

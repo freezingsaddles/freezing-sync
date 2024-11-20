@@ -1,11 +1,12 @@
-import os
-import time
+import functools
 import json
 import logging
+import os
+import time
 import urllib.parse
-import functools
-import requests
 from datetime import datetime
+
+import requests
 
 from . import model
 
@@ -56,9 +57,9 @@ class Client(object):
         """
         Parses the JSON response from the server, raising a :class:`stravatools.api.Fault` if the
         server returned an error.
-        
+
         :param response: The response JSON
-        :raises Fault: If the response contains an error. 
+        :raises Fault: If the response contains an error.
         """
         if "cdoError" in response:
             raise Fault(response["name"], response["message"])

@@ -1,13 +1,13 @@
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 
 import arrow
+from freezing.model import meta, orm
 from pytz import utc
 from sqlalchemy import and_
 
-from freezing.model import meta, orm
-
 from freezing.sync.config import config
 from freezing.sync.data.activity import ActivitySync
+
 from . import BaseCommand
 
 

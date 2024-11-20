@@ -3,14 +3,16 @@ Created on Feb 27, 2013
 
 @author: hans
 """
-import os
-import time
+
+import functools
 import json
 import logging
-from urllib.parse import urlparse, urlunsplit
-import functools
-import requests
+import os
+import time
 from datetime import datetime
+from urllib.parse import urlparse, urlunsplit
+
+import requests
 
 from .model import HistoryDay
 
@@ -132,9 +134,9 @@ class Client(object):
         """
         Parses the JSON response from the server, raising a :class:`stravatools.api.Fault` if the
         server returned an error.
-        
+
         :param response: The response JSON
-        :raises Fault: If the response contains an error. 
+        :raises Fault: If the response contains an error.
         """
         if "error" in response["response"]:
             raise Fault(

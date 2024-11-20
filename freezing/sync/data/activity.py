@@ -1,32 +1,28 @@
 import logging
 import re
-from typing import List, Optional
 from datetime import datetime, timedelta
+from typing import List, Optional
 
 import arrow
+from freezing.model import meta
+from freezing.model.orm import Athlete, Ride, RideEffort, RideError, RideGeo, RidePhoto
 from geoalchemy import WKTSpatialElement
-
 from sqlalchemy import and_, func
 from sqlalchemy.orm import joinedload
-
-from freezing.sync.utils.cache import CachingActivityFetcher
 from stravalib import unithelper
-from stravalib.exc import ObjectNotFound, AccessUnauthorized, Fault
-
+from stravalib.exc import AccessUnauthorized, Fault, ObjectNotFound
 from stravalib.model import Activity, ActivityPhotoPrimary
-
-from freezing.model import meta
-from freezing.model.orm import Athlete, Ride, RideEffort, RidePhoto, RideError, RideGeo
 
 from freezing.sync.config import config, statsd
 from freezing.sync.exc import (
-    DataEntryError,
-    CommandError,
     ActivityNotFound,
+    CommandError,
+    DataEntryError,
     IneligibleActivity,
 )
+from freezing.sync.utils.cache import CachingActivityFetcher
 
-from . import StravaClientForAthlete, BaseSync
+from . import BaseSync, StravaClientForAthlete
 
 
 class ActivitySync(BaseSync):
@@ -144,7 +140,7 @@ class ActivitySync(BaseSync):
             else:
                 ride.resync_count = 1 + sync_count
                 ride.resync_date = datetime.now() + timedelta(
-                    hours=6 ** sync_count
+                    hours=6**sync_count
                 )  # 1, 6, 36 hours
 
         except:
@@ -695,7 +691,7 @@ class ActivitySync(BaseSync):
         ride_ids_needing_detail = []
         ride_ids_needing_streams = []
 
-        for (i, strava_activity) in enumerate(api_ride_entries):
+        for i, strava_activity in enumerate(api_ride_entries):
             self.logger.debug(
                 "Processing ride: {0} ({1}/{2})".format(
                     strava_activity.id, i + 1, num_rides

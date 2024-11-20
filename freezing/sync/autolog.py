@@ -1,7 +1,8 @@
 from __future__ import absolute_import
-import sys
-import logging
+
 import inspect
+import logging
+import sys
 
 
 class EagerFormattingAdapter(logging.LoggerAdapter):
@@ -64,7 +65,10 @@ class EagerFormattingAdapter(logging.LoggerAdapter):
             # by casting the left side (the "msg" variable) in this context
             # to unicode. So we'll do that here
 
-            if sys.version_info >= (3, 0,):
+            if sys.version_info >= (
+                3,
+                0,
+            ):
                 # this is most likely unnecessary on python 3, but it's here
                 # for completeness, in the case of someone manually creating
                 # a bytestring
@@ -213,7 +217,7 @@ log = AutoLogger(EagerFormattingAdapter)
 
 
 def log_exceptions(fn):
-    """ A decorator designed to wrap a function and log any exception that method produces.
+    """A decorator designed to wrap a function and log any exception that method produces.
 
     The exception will still be raised after being logged.
 
