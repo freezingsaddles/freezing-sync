@@ -17,7 +17,6 @@ from freezing.sync.subscribe import ActivityUpdateSubscriber
 
 
 def main():
-
     init_logging()
     init_model(config.SQLALCHEMY_URL)
 

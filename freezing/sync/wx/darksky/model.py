@@ -6,7 +6,6 @@ from pytz import timezone, utc
 
 
 class Hour(object):
-
     time: datetime
     temperature: float
     apparent_temperature: float
@@ -22,7 +21,6 @@ class Hour(object):
 
 
 class Day(object):
-
     sunrise_time: datetime
     sunset_time: datetime
     temperature_min: float
@@ -36,7 +34,6 @@ class Day(object):
 
 
 class Forecast(object):
-
     timezone: str
     latitude: float
     longitude: float
