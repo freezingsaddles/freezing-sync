@@ -1,4 +1,4 @@
-APScheduler==3.10.4
+APScheduler==3.11.0
 GeoAlchemy @ https://github.com/hozn/GeoAlchemy/archive/0.7.3dev1.tar.gz
 PyMySQL==1.1.1
 colorlog==4.1.0
