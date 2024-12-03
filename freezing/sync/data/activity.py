@@ -6,7 +6,6 @@ from typing import List, Optional
 import arrow
 from freezing.model import meta
 from freezing.model.orm import Athlete, Ride, RideEffort, RideError, RideGeo, RidePhoto
-from geoalchemy import WKTSpatialElement
 from sqlalchemy import and_, func
 from sqlalchemy.orm import joinedload
 from stravalib import unithelper
@@ -571,19 +570,15 @@ class ActivitySync(BaseSync):
         """
         session = meta.scoped_session()
         if activity.start_latlng:
-            start_geo = WKTSpatialElement(
-                "POINT({lon} {lat})".format(
-                    lat=activity.start_latlng.lat, lon=activity.start_latlng.lon
-                )
+            start_geo = "POINT({lon} {lat})".format(
+                lat=activity.start_latlng.lat, lon=activity.start_latlng.lon
             )
         else:
             start_geo = None
 
         if activity.end_latlng:
-            end_geo = WKTSpatialElement(
-                "POINT({lon} {lat})".format(
-                    lat=activity.end_latlng.lat, lon=activity.end_latlng.lon
-                )
+            end_geo = "POINT({lon} {lat})".format(
+                lat=activity.end_latlng.lat, lon=activity.end_latlng.lon
             )
         else:
             end_geo = None
