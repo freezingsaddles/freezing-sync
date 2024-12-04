@@ -11,7 +11,6 @@ from freezing.model.orm import (
     RidePhoto,
     Team,
 )
-from geoalchemy import WKTSpatialElement
 from sqlalchemy import and_
 from sqlalchemy.orm import joinedload
 from stravalib import model as sm
