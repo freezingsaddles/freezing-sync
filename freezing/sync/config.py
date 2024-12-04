@@ -59,7 +59,7 @@ class Config:
 
     DATADOG_API_KEY = env("DATADOG_API_KEY", default=None)
     DATADOG_APP_KEY = env("DATADOG_APP_KEY", default=None)
-    DATADOG_HOST = env("DATADOG_HOST", default="datadog.container")
+    DATADOG_HOST = env("DATADOG_HOST", default="localhost")
     DATADOG_PORT = env("DATADOG_PORT", cast=int, default=8125)
 
     REQUEUE_DELAY = env("REQUEUE_DELAY", cast=int, default=300)
