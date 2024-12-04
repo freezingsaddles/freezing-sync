@@ -16,4 +16,5 @@ eggs/
 .eggs/
 *.egg-info/
 *.egg
+*.cfg
 
