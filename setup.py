@@ -3,7 +3,7 @@ import os.path
 
 from setuptools import setup
 
-version = "1.4.7"
+version = "1.5.0"
 
 long_description = """
 freezing-sync is the component responsible for fetching activities, weather data, etc.
@@ -11,8 +11,9 @@ freezing-sync is the component responsible for fetching activities, weather data
 
 install_requires = [
     "APScheduler",
-    "GeoAlchemy",
+    "GeoAlchemy2",
     "PyMySQL",
+    "SQLAlchemy",
     "colorlog",
     "datadog",
     "envparse",
