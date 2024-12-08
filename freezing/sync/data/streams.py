@@ -3,7 +3,7 @@ from typing import Dict, List
 
 from freezing.model import meta
 from freezing.model.orm import Athlete, Ride, RideTrack
-from geoalchemy import WKTSpatialElement
+from geoalchemy2.elements import WKTElement
 from polyline.codec import PolylineCodec
 from sqlalchemy import and_, or_, update
 from sqlalchemy.orm import joinedload
@@ -151,7 +151,7 @@ class StreamSync(BaseSync):
                 RideTrack.__table__.delete().where(RideTrack.ride_id == ride.id)
             )
 
-            gps_track = WKTSpatialElement(wktutils.linestring_wkt(lonlat_points))
+            gps_track = WKTElement(wktutils.linestring_wkt(lonlat_points))
 
             ride_track = RideTrack()
             ride_track.gps_track = gps_track
