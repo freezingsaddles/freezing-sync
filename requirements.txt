@@ -1,10 +1,10 @@
 APScheduler==3.10.4
-GeoAlchemy @ https://github.com/hozn/GeoAlchemy/archive/0.7.3dev1.tar.gz
+GeoAlchemy2==0.16.0
 PyMySQL==1.1.1
 colorlog==4.1.0
 datadog==0.33.0
 envparse==0.2.0
-freezing-model @ https://github.com/freezingsaddles/freezing-model/archive/0.8.6.tar.gz
+freezing-model @ https://github.com/freezingsaddles/freezing-model/archive/0.10.4.tar.gz
 greenstalk==1.0.1
 polyline==1.4.0
 pytz==2024.2
