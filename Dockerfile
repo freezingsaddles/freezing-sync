@@ -41,4 +41,9 @@ COPY --from=buildstep /build/wheels /tmp/wheels
 
 RUN pip3 install /tmp/wheels/*
 
+RUN mkdir /app
+ADD alembic.ini /app
+
+WORKDIR /app
+
 CMD freezing-sync
