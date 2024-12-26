@@ -1,4 +1,4 @@
-APScheduler==3.10.4
+APScheduler==3.11.0
 GeoAlchemy2==0.16.0
 PyMySQL==1.1.1
 colorlog==4.1.0
