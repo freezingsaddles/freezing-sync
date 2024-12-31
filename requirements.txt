@@ -2,7 +2,7 @@ APScheduler==3.11.0
 GeoAlchemy2==0.16.0
 PyMySQL==1.1.1
 colorlog==4.1.0
-datadog==0.33.0
+datadog==0.50.2
 envparse==0.2.0
 freezing-model @ https://github.com/freezingsaddles/freezing-model/archive/0.10.4.tar.gz
 greenstalk==2.0.2
