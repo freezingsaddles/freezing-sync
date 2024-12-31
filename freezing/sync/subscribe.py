@@ -25,6 +25,9 @@ class ActivityUpdateSubscriber:
         self.activity_sync = ActivitySync(self.logger)
         self.streams_sync = StreamSync(self.logger)
 
+        """Delay between requests to Strava API to avoid rate limiting."""
+        self._THROTTLE_DELAY = 3.0
+
     def handle_message(self, message: ActivityUpdate):
         self.logger.info("Processing activity update {}".format(message))
 
@@ -102,6 +105,9 @@ class ActivityUpdateSubscriber:
                         )  # We put it back with a delay
                     else:
                         self.client.delete(job)
+                        # FIXME: Work around stravalib 1.2's incomplete understanding of Strava Rate limits by just sleeping for a bit between requests.
+                        sleep(_THROTTLE_DELAY)
+
         except (KeyboardInterrupt, SystemExit):
             raise
         except:

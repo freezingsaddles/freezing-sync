@@ -39,11 +39,13 @@ VOLUME /data
 
 COPY --from=buildstep /build/wheels /tmp/wheels
 
-RUN pip3 install /tmp/wheels/*
+# Thanks https://stackoverflow.com/a/74634740/424301 for the tip on
+# using --use-deprecated=legacy-resolver
+RUN pip3 install --use-deprecated=legacy-resolver /tmp/wheels/*
 
 RUN mkdir /app
 ADD alembic.ini /app
 
 WORKDIR /app
 
-CMD ['freezing-sync']
+CMD ["/bin/sh", "-c", "freezing-sync"]
