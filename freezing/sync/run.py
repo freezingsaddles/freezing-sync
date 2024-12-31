@@ -55,8 +55,7 @@ def main():
     scheduler.start()
 
     beanclient = Client(
-        host=config.BEANSTALKD_HOST,
-        port=config.BEANSTALKD_PORT,
+        (config.BEANSTALKD_HOST, config.BEANSTALKD_PORT),
         watch=[DefinedTubes.activity_update.value],
     )
 
