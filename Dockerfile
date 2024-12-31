@@ -1,7 +1,7 @@
 # BUILD
 # =====
 
-FROM ubuntu:22.04 as buildstep
+FROM ubuntu:22.04 AS buildstep
 LABEL maintainer="Richard Bullington-McGuire <richard@obscure.org>"
 
 RUN apt-get update \
@@ -46,4 +46,4 @@ ADD alembic.ini /app
 
 WORKDIR /app
 
-CMD freezing-sync
+CMD ['freezing-sync']

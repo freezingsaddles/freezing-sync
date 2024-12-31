@@ -4,7 +4,6 @@ from typing import Dict, List
 from freezing.model import meta
 from freezing.model.orm import Athlete, Ride, RideTrack
 from geoalchemy2.elements import WKTElement
-from polyline.codec import PolylineCodec
 from sqlalchemy import and_, or_, update
 from sqlalchemy.orm import joinedload
 from stravalib.exc import ObjectNotFound
