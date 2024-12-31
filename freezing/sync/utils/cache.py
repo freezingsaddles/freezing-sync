@@ -11,12 +11,25 @@ from stravalib.model import Activity, IdentifiableEntity, Stream
 
 
 class CachingAthleteObjectFetcher(metaclass=abc.ABCMeta):
+    """
+    A class to fetch and cache athlete objects.
+    """
+
     @property
     @abc.abstractmethod
     def object_type(self):
+        """
+        The type of object being fetched.
+        """
         pass
 
     def __init__(self, cache_basedir: str, client: Client):
+        """
+        Initialize the fetcher with a cache directory and a client.
+
+        :param cache_basedir: The base directory for caching.
+        :param client: The client to use for fetching objects.
+        """
         assert cache_basedir, "No cache_basedir provided."
         self.logger = logging.getLogger(
             "{0.__module__}.{0.__name__}".format(self.__class__)
@@ -25,6 +38,13 @@ class CachingAthleteObjectFetcher(metaclass=abc.ABCMeta):
         self.client = client
 
     def filename(self, *, athlete_id: int, object_id: int):
+        """
+        Generate the filename for the cached object.
+
+        :param athlete_id: The athlete ID.
+        :param object_id: The object ID.
+        :return: The filename for the cached object.
+        """
         return "{}.json".format(athlete_id)
 
     def cache_dir(self, athlete_id: int) -> str:
@@ -93,6 +113,15 @@ class CachingAthleteObjectFetcher(metaclass=abc.ABCMeta):
         use_cache: bool = True,
         only_cache: bool = False
     ) -> Optional[IdentifiableEntity]:
+        """
+        Fetch the object, possibly from cache.
+
+        :param athlete_id: The athlete ID.
+        :param object_id: The object ID.
+        :param use_cache: Whether to use the cache.
+        :param only_cache: Whether to use only the cache.
+        :return: The fetched object.
+        """
         pass
 
     def retrieve_object_json(
@@ -169,11 +198,21 @@ class CachingAthleteObjectFetcher(metaclass=abc.ABCMeta):
 
 
 class CachingActivityFetcher(CachingAthleteObjectFetcher):
+    """
+    A class to fetch and cache activities.
+    """
     object_type = "activity"
 
     def download_object_json(
         self, *, athlete_id: int, object_id: int
     ) -> Dict[str, Any]:
+        """
+        Download the activity JSON.
+
+        :param athlete_id: The athlete ID.
+        :param object_id: The activity ID.
+        :return: The activity JSON.
+        """
         return self.client.protocol.get(
             "/activities/{id}", id=object_id, include_all_efforts=True
         )
@@ -206,14 +245,31 @@ class CachingActivityFetcher(CachingAthleteObjectFetcher):
 
 
 class CachingStreamFetcher(CachingAthleteObjectFetcher):
+    """
+    A class to fetch and cache activity streams.
+    """
     object_type = "streams"
 
     def filename(self, *, athlete_id: int, object_id: int):
+        """
+        Generate the filename for the cached stream.
+
+        :param athlete_id: The athlete ID.
+        :param object_id: The activity ID.
+        :return: The filename for the cached stream.
+        """
         return "{}_streams.json".format(athlete_id)
 
     def download_object_json(
         self, *, athlete_id: int, object_id: int
     ) -> Dict[str, Any]:
+        """
+        Download the stream JSON.
+
+        :param athlete_id: The athlete ID.
+        :param object_id: The activity ID.
+        :return: The stream JSON.
+        """
         return self.client.protocol.get(
             "/activities/{id}/streams/{types}".format(
                 id=object_id, types="latlng,time,altitude"

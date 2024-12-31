@@ -18,6 +18,9 @@ from . import BaseSync, StravaClientForAthlete
 
 
 class StreamSync(BaseSync):
+    """
+    A class to synchronize activity streams (GPS, etc.) JSON.
+    """
     name = "sync-activity-streams"
     description = "Sync activity streams (GPS, etc.) JSON."
 
@@ -29,6 +32,15 @@ class StreamSync(BaseSync):
         use_cache: bool = True,
         only_cache: bool = False,
     ):
+        """
+        Synchronize activity streams.
+
+        :param athlete_id: The athlete ID.
+        :param rewrite: Whether to rewrite the ride data already in database.
+        :param max_records: Limit number of rides to return.
+        :param use_cache: Whether to use cached activities.
+        :param only_cache: Whether to use only cached activities.
+        """
         session = meta.scoped_session()
 
         q = session.query(Ride).options(joinedload(Ride.athlete))
@@ -81,6 +93,13 @@ class StreamSync(BaseSync):
     def fetch_and_store_activity_streams(
         self, *, athlete_id: int, activity_id: int, use_cache: bool = False
     ):
+        """
+        Fetch and store activity streams.
+
+        :param athlete_id: The athlete ID.
+        :param activity_id: The activity ID.
+        :param use_cache: Whether to use cached activities.
+        """
         with meta.transaction_context() as session:
             self.logger.info(
                 "Fetching activity streams for athlete_id={}, activity_id={}".format(

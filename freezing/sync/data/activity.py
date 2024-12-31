@@ -26,6 +26,9 @@ from . import BaseSync, StravaClientForAthlete
 
 
 class ActivitySync(BaseSync):
+    """
+    A class to synchronize activities.
+    """
     name = "sync-activity"
     description = "Sync activities."
 
@@ -261,6 +264,15 @@ class ActivitySync(BaseSync):
         use_cache: bool = True,
         only_cache: bool = False,
     ):
+        """
+        Synchronize ride details.
+
+        :param athlete_id: The athlete ID.
+        :param rewrite: Whether to rewrite the ride data already in database.
+        :param max_records: Limit number of rides to return.
+        :param use_cache: Whether to use cached activities.
+        :param only_cache: Whether to use only cached activities.
+        """
         session = meta.scoped_session()
 
         q = session.query(Ride)
@@ -319,6 +331,12 @@ class ActivitySync(BaseSync):
                 session.rollback()
 
     def delete_activity(self, *, athlete_id: int, activity_id: int):
+        """
+        Delete an activity.
+
+        :param athlete_id: The athlete ID.
+        :param activity_id: The activity ID.
+        """
         session = meta.scoped_session()
         ride = (
             session.query(Ride)
@@ -339,6 +357,13 @@ class ActivitySync(BaseSync):
     def fetch_and_store_activity_detail(
         self, *, athlete_id: int, activity_id: int, use_cache: bool = False
     ):
+        """
+        Fetch and store activity details.
+
+        :param athlete_id: The athlete ID.
+        :param activity_id: The activity ID.
+        :param use_cache: Whether to use cached activities.
+        """
         with meta.transaction_context() as session:
             self.logger.info(
                 "Fetching detailed activity athlete_id={}, activity_id={}".format(
@@ -451,11 +476,10 @@ class ActivitySync(BaseSync):
         """
         Asserts that activity is valid for the competition.
 
-        :param activity:
-        :param start_date:
-        :param end_date:
-        :param exclude_keywords:
-        :return:
+        :param activity: The activity to check.
+        :param start_date: The start date of the competition.
+        :param end_date: The end date of the competition.
+        :param exclude_keywords: A list of keywords to use for excluding rides from the results.
         """
         assert end_date.tzinfo, "Need timezone-aware end date."
         assert start_date.tzinfo, "Need timezone-aware start date"
@@ -519,7 +543,7 @@ class ActivitySync(BaseSync):
 
         :param athlete: The Athlete model object.
         :param start_date: The date to start listing rides.
-
+        :param end_date: The date to end listing rides.
         :param exclude_keywords: A list of keywords to use for excluding rides from the results (e.g. "#NoBAFS")
 
         :return: list of activity objects for rides in reverse chronological order.
@@ -658,6 +682,14 @@ class ActivitySync(BaseSync):
     def _sync_rides(
         self, start_date: datetime, end_date: datetime, athlete, rewrite: bool = False
     ):
+        """
+        Synchronize rides for an athlete.
+
+        :param start_date: The start date of the competition.
+        :param end_date: The end date of the competition.
+        :param athlete: The athlete model object.
+        :param rewrite: Whether to rewrite the ride data already in database.
+        """
         sess = meta.scoped_session()
 
         api_ride_entries = self.list_rides(
@@ -794,6 +826,7 @@ class ActivitySync(BaseSync):
         end_date: datetime = None,
     ):
         """
+        Synchronize rides for a segment of athletes.
 
         :param total_segments: The number of segments to divide athletes into (e.g. 24 if this is being run hourly)
         :param segment: Which segment (0-based) to select.
@@ -824,6 +857,15 @@ class ActivitySync(BaseSync):
         force: bool = False,
         athlete_ids: List[int] = None,
     ):
+        """
+        Synchronize rides for athletes.
+
+        :param start_date: The start date of the competition.
+        :param end_date: The end date of the competition.
+        :param rewrite: Whether to rewrite the ride data already in database.
+        :param force: Whether to force the sync.
+        :param athlete_ids: List of athlete IDs to sync.
+        """
         with meta.transaction_context() as sess:
             if start_date is None:
                 start_date = config.START_DATE

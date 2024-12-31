@@ -2,7 +2,6 @@ import abc
 import argparse
 import logging
 
-from colorlog import ColoredFormatter
 from freezing.model import init_model
 
 from freezing.sync.config import config, init_logging
@@ -10,6 +9,9 @@ from freezing.sync.exc import CommandError
 
 
 class BaseCommand(metaclass=abc.ABCMeta):
+    """
+    Base class for all command-line scripts.
+    """
     logger: logging.Logger = None
 
     @property
@@ -27,6 +29,11 @@ class BaseCommand(metaclass=abc.ABCMeta):
         """
 
     def build_parser(self) -> argparse.ArgumentParser:
+        """
+        Build the argument parser for the command.
+
+        :return: The argument parser.
+        """
         parser = argparse.ArgumentParser(description=self.description)
 
         log_g = parser.add_mutually_exclusive_group()
@@ -55,6 +62,12 @@ class BaseCommand(metaclass=abc.ABCMeta):
         return parser
 
     def parse(self, args=None):
+        """
+        Parse the command-line arguments.
+
+        :param args: The command-line arguments.
+        :return: The parsed arguments.
+        """
         parser = self.build_parser()
         return parser.parse_args(args)
 
@@ -77,6 +90,12 @@ class BaseCommand(metaclass=abc.ABCMeta):
         self.logger = logging.getLogger(self.name)
 
     def run(self, argv=None):
+        """
+        Run the command.
+
+        :param argv: The command-line arguments.
+        :return:
+        """
         parser = self.build_parser()
         assert (
             parser is not None
@@ -102,3 +121,4 @@ class BaseCommand(metaclass=abc.ABCMeta):
 
         :param args: The parsed options/args from argparse.
         """
+        pass

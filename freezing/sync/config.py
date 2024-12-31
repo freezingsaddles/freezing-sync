@@ -5,7 +5,6 @@ from typing import List
 
 import arrow
 import pytz
-from colorlog import ColoredFormatter
 from datadog import DogStatsd
 from envparse import env
 

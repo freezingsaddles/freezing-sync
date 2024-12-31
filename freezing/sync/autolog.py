@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-
-import inspect
 import logging
 
 
@@ -200,7 +197,7 @@ class AutoLogger(object):
 
         if self.adapter_class:
             logger = self.adapter_class(
-                logger, *self.adapter_args, **self.adapter_kwargs
+                logger, *self.adapter_args, self.adapter_kwargs
             )
 
         return getattr(logger, name)
