@@ -6,7 +6,6 @@ from freezing.model import meta
 from freezing.model.msg.mq import ActivityUpdate, ActivityUpdateSchema
 from freezing.model.msg.strava import AspectType
 from freezing.model.orm import Athlete
-from stravalib.exc import ObjectNotFound
 from time import sleep
 
 from freezing.sync.autolog import log
@@ -97,7 +96,7 @@ class ActivityUpdateSubscriber:
                         self.logger.info("Received message: {!r}".format(job.body))
                         update = schema.loads(job.body)
                         self.handle_message(update)
-                    except:
+                    except Exception:
                         msg = "Error processing message, will requeue w/ delay of {} seconds."
                         self.logger.exception(msg.format(Config.REQUEUE_DELAY))
                         statsd.increment("strava.webhook.error")
@@ -107,11 +106,11 @@ class ActivityUpdateSubscriber:
                     else:
                         self.client.delete(job)
                         # FIXME: Work around stravalib 1.2's incomplete understanding of Strava Rate limits by just sleeping for a bit between requests.
-                        sleep(_THROTTLE_DELAY)
+                        sleep(self._THROTTLE_DELAY)
 
         except (KeyboardInterrupt, SystemExit):
             raise
-        except:
+        except Exception:
             self.logger.exception("Unhandled error in tube subscriber loop, exiting.")
             self.shutdown_event.set()
             raise
