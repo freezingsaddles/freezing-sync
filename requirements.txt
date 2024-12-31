@@ -6,7 +6,6 @@ datadog==0.50.2
 envparse==0.2.0
 freezing-model @ https://github.com/freezingsaddles/freezing-model/archive/0.10.4.tar.gz
 greenstalk==2.0.2
-polyline==2.0.2
 pytz==2024.2
 requests==2.32.3
 stravalib==1.2.0
