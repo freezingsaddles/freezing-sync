@@ -46,4 +46,4 @@ ADD alembic.ini /app
 
 WORKDIR /app
 
-CMD ['freezing-sync']
+CMD ["/bin/sh", "-c", "freezing-sync"]
