@@ -7,6 +7,7 @@ from freezing.model.msg.mq import ActivityUpdate, ActivityUpdateSchema
 from freezing.model.msg.strava import AspectType
 from freezing.model.orm import Athlete
 from stravalib.exc import ObjectNotFound
+from time import sleep
 
 from freezing.sync.autolog import log
 from freezing.sync.config import Config, statsd
