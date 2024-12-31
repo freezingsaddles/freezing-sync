@@ -12,6 +12,7 @@ class BaseCommand(metaclass=abc.ABCMeta):
     """
     Base class for all command-line scripts.
     """
+
     logger: logging.Logger = None
 
     @property
@@ -121,4 +122,3 @@ class BaseCommand(metaclass=abc.ABCMeta):
 
         :param args: The parsed options/args from argparse.
         """
-        pass

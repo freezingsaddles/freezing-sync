@@ -21,7 +21,6 @@ class CachingAthleteObjectFetcher(metaclass=abc.ABCMeta):
         """
         The type of object being fetched.
         """
-        pass
 
     def __init__(self, cache_basedir: str, client: Client):
         """
@@ -122,7 +121,6 @@ class CachingAthleteObjectFetcher(metaclass=abc.ABCMeta):
         :param only_cache: Whether to use only the cache.
         :return: The fetched object.
         """
-        pass
 
     def retrieve_object_json(
         self,
@@ -201,6 +199,7 @@ class CachingActivityFetcher(CachingAthleteObjectFetcher):
     """
     A class to fetch and cache activities.
     """
+
     object_type = "activity"
 
     def download_object_json(
@@ -248,6 +247,7 @@ class CachingStreamFetcher(CachingAthleteObjectFetcher):
     """
     A class to fetch and cache activity streams.
     """
+
     object_type = "streams"
 
     def filename(self, *, athlete_id: int, object_id: int):

@@ -6,6 +6,7 @@ class SyncActivityStreams(BaseCommand):
     """
     Sync activity streams.
     """
+
     name = "sync-activity-streams"
     description = "Sync activity streams."
 

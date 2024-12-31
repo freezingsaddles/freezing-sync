@@ -21,6 +21,7 @@ class StreamSync(BaseSync):
     """
     A class to synchronize activity streams (GPS, etc.) JSON.
     """
+
     name = "sync-activity-streams"
     description = "Sync activity streams (GPS, etc.) JSON."
 

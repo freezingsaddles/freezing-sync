@@ -14,6 +14,7 @@ class PhotoSync(BaseSync):
     """
     A class to synchronize photos.
     """
+
     name = "sync-photos"
     description = "Sync (non-primary) ride photos."
 

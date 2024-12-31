@@ -6,6 +6,7 @@ class SyncActivityDetails(BaseCommand):
     """
     Sync the activity details JSON.
     """
+
     name = "sync-activity-detail"
     description = "Sync the activity details JSON."
 

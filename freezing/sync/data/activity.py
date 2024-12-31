@@ -29,6 +29,7 @@ class ActivitySync(BaseSync):
     """
     A class to synchronize activities.
     """
+
     name = "sync-activity"
     description = "Sync activities."
 

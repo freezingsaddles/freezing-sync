@@ -7,6 +7,7 @@ class SyncPhotosScript(BaseCommand):
     """
     Sync ride photos.
     """
+
     name = "sync-photos"
     description = "Sync ride photos."
 
