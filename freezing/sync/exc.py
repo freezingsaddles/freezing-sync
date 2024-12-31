@@ -4,7 +4,6 @@ class NoTeamsError(RuntimeError):
     """
 
 
-
 class MultipleTeamsError(RuntimeError):
     """
     Raised when multiple teams are found.
@@ -20,12 +19,10 @@ class ConfigurationError(RuntimeError):
     """
 
 
-
 class CommandError(RuntimeError):
     """
     Raised when there is a command error.
     """
-
 
 
 class DataEntryError(ValueError):
@@ -34,16 +31,13 @@ class DataEntryError(ValueError):
     """
 
 
-
 class IneligibleActivity(ValueError):
     """
     Raised when an activity is ineligible.
     """
 
 
-
 class ActivityNotFound(RuntimeError):
     """
     Raised when an activity is not found.
     """
-
