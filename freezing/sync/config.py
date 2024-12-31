@@ -6,9 +6,8 @@ from typing import List
 import arrow
 import pytz
 from colorlog import ColoredFormatter
-from datadog import DogStatsd, initialize
+from datadog import DogStatsd
 from envparse import env
-from freezing.model import init_model
 
 envfile = os.environ.get("APP_SETTINGS", os.path.join(os.getcwd(), ".env"))
 
