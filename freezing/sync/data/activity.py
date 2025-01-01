@@ -11,7 +11,7 @@ from sqlalchemy import and_, func
 from sqlalchemy.orm import joinedload
 from stravalib import unithelper
 from stravalib.exc import AccessUnauthorized, Fault, ObjectNotFound
-from stravalib.model import Activity, ActivityPhotoPrimary
+from stravalib.model import DetailedActivity, ActivityPhotoPrimary
 
 from freezing.sync.config import config, statsd
 from freezing.sync.exc import (
@@ -29,7 +29,7 @@ class ActivitySync(BaseSync):
     name = "sync-activity"
     description = "Sync activities."
 
-    def update_ride_basic(self, strava_activity: Activity, ride: Ride):
+    def update_ride_basic(self, strava_activity: DetailedActivity, ride: Ride):
         """
         Set basic ride properties from the Strava Activity object.
 
@@ -92,7 +92,7 @@ class ActivitySync(BaseSync):
             )
         )
 
-    def write_ride_efforts(self, strava_activity: Activity, ride: Ride):
+    def write_ride_efforts(self, strava_activity: DetailedActivity, ride: Ride):
         """
         Writes out all effort associated with a ride to the database.
 
@@ -217,7 +217,7 @@ class ActivitySync(BaseSync):
 
         return p
 
-    def write_ride_photo_primary(self, strava_activity: Activity, ride: Ride):
+    def write_ride_photo_primary(self, strava_activity: DetailedActivity, ride: Ride):
         """
         Store primary photo for activity from the main detail-level activity.
 
@@ -400,7 +400,7 @@ class ActivitySync(BaseSync):
                 )
                 raise
 
-    def update_ride_complete(self, strava_activity: Activity, ride: Ride):
+    def update_ride_complete(self, strava_activity: DetailedActivity, ride: Ride):
         """
         Updates all ride data from a fully-populated Strava `Activity`.
 
@@ -442,7 +442,7 @@ class ActivitySync(BaseSync):
 
     def check_activity(
         self,
-        activity: Activity,
+        activity: DetailedActivity,
         *,
         start_date: datetime,
         end_date: datetime,
@@ -478,7 +478,7 @@ class ActivitySync(BaseSync):
                 )
             )
 
-        if activity.type not in (Activity.RIDE, Activity.EBIKERIDE):
+        if activity.type not in (DetailedActivity.RIDE, DetailedActivity.EBIKERIDE):
             raise IneligibleActivity(
                 "Skipping ride {0} ({1!r}) because it is not a RIDE or EBIKERIDE.".format(
                     activity.id, activity.name
@@ -513,7 +513,7 @@ class ActivitySync(BaseSync):
         start_date: datetime,
         end_date: datetime,
         exclude_keywords: List[str] = None,
-    ) -> List[Activity]:
+    ) -> List[DetailedActivity]:
         """
         List all of the rides for individual athlete.
 
@@ -546,12 +546,12 @@ class ActivitySync(BaseSync):
 
         activities = client.get_activities(
             after=start_date, limit=None
-        )  # type: List[Activity]
+        )  # type: List[DetailedActivity]
         filtered_rides = [
             a
             for a in activities
             if (
-                (a.type == Activity.RIDE or a.type == Activity.EBIKERIDE)
+                (a.type == DetailedActivity.RIDE or a.type == DetailedActivity.EBIKERIDE)
                 and not a.manual
                 and not a.trainer
                 and not is_excluded(a)
@@ -560,7 +560,7 @@ class ActivitySync(BaseSync):
 
         return filtered_rides
 
-    def write_ride(self, activity: Activity) -> Ride:
+    def write_ride(self, activity: DetailedActivity) -> Ride:
         """
         Takes the specified activity and writes it to the database.
 
