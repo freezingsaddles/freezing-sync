@@ -41,6 +41,14 @@ There are a few additional settings you may need (i.e. not to be default) when n
 - `STRAVA_ACTIVITY_CACHE_DIR`: Where to put cached activities (absolute path is a good idea).
 - `VISUAL_CROSSING_CACHE_DIR`: Similarly, where should weather files be stored?
 
+## Running Unit Tests
+
+To run the unit tests, you can use `pytest`. Make sure you have all the dependencies installed, including the ones in `requirements-test.txt`. You can run the tests with the following command:
+
+```bash
+pytest
+```
+
 # Legal
 
 This software is a an [Apache 2.0 Licensed](LICENSE), community-driven effort, and as such the contributions are owned by the individual contributors:
@@ -48,4 +56,3 @@ This software is a an [Apache 2.0 Licensed](LICENSE), community-driven effort, a
 Copyright 2018 Hans Lillelid <br>
 Copyright 2020 Richard Bullington-McGuire <br>
 Copyright 2020 Merlin Hughes <br>
-
