@@ -46,10 +46,10 @@ def main():
     # This should generally not pick up anytihng.
     scheduler.add_job(activity_sync.sync_rides_detail, "cron", minute="20")
 
-    # Sync weather at 8am UTC
-    scheduler.add_job(weather_sync.sync_weather, "cron", hour="8")
+    # Sync weather every hour
+    scheduler.add_job(weather_sync.sync_weather, "cron", minute="45")
 
-    # Sync athletes once a day at 6am UTC
+    # Sync athletes every hour
     scheduler.add_job(athlete_sync.sync_athletes, "cron", minute="30")
 
     scheduler.start()

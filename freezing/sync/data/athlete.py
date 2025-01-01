@@ -1,17 +1,12 @@
 from datetime import datetime
 
 from freezing.model import meta
-from freezing.model.orm import (
-    Athlete,
-    Team,
-)
+from freezing.model.orm import Athlete, Team
 from stravalib import model as sm
 
 from freezing.sync.config import config
-from freezing.sync.exc import (
-    MultipleTeamsError,
-    NoTeamsError,
-)
+from freezing.sync.exc import MultipleTeamsError, NoTeamsError
+
 from . import BaseSync, StravaClientForAthlete
 
 
@@ -44,9 +39,13 @@ class AthleteSync(BaseSync):
                     if not self.all_done():
                         self.register_athlete_team(strava_athlete, athlete)
                 except NoTeamsError as ex:
-                    self.logger.info(f'Athlete "{athlete}" is not on a registered team: {ex}')
+                    self.logger.info(
+                        f'Athlete "{athlete}" is not on a registered team: {ex}'
+                    )
                 except MultipleTeamsError as ex:
-                    self.logger.info(f'Athlete "{athlete}" is on multiple competition teams: {ex}')
+                    self.logger.info(
+                        f'Athlete "{athlete}" is on multiple competition teams: {ex}'
+                    )
                 except Exception:
                     self.logger.exception(
                         "Error registering athlete {0}".format(athlete), exc_info=True
