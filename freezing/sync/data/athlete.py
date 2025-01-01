@@ -1,32 +1,17 @@
 from datetime import datetime
 
-import arrow
 from freezing.model import meta
 from freezing.model.orm import (
     Athlete,
-    Ride,
-    RideEffort,
-    RideError,
-    RideGeo,
-    RidePhoto,
     Team,
 )
-from geoalchemy2.elements import WKTElement
-from sqlalchemy import and_
-from sqlalchemy.orm import joinedload
 from stravalib import model as sm
-from stravalib import unithelper
-from stravalib.exc import Fault
 
 from freezing.sync.config import config
 from freezing.sync.exc import (
-    CommandError,
-    DataEntryError,
     MultipleTeamsError,
     NoTeamsError,
 )
-from freezing.sync.utils.cache import CachingActivityFetcher
-
 from . import BaseSync, StravaClientForAthlete
 
 
@@ -58,8 +43,12 @@ class AthleteSync(BaseSync):
                     self.register_athlete(strava_athlete, athlete.access_token)
                     if not self.all_done():
                         self.register_athlete_team(strava_athlete, athlete)
-                except:
-                    self.logger.warning(
+                except NoTeamsError as ex:
+                    self.logger.info(f'Athlete "{athlete}" is not on a registered team: {ex}')
+                except MultipleTeamsError as ex:
+                    self.logger.info(f'Athlete "{athlete}" is on multiple competition teams: {ex}')
+                except Exception:
+                    self.logger.exception(
                         "Error registering athlete {0}".format(athlete), exc_info=True
                     )
 
@@ -109,7 +98,7 @@ class AthleteSync(BaseSync):
                     f"Athlete '{athlete_name}' was renamed '{athlete.name}'"
                 )
                 athlete.display_name = unambiguous_display_name()
-        except:
+        except Exception:
             self.logger.exception(
                 f"Athlete name disambiguation error for {strava_athlete.id}",
                 exc_info=True,
