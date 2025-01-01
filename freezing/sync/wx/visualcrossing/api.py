@@ -61,7 +61,7 @@ class HistoVisualCrossing(object):
         if not self.cache_dir:
             return None  # where are all the monads
         directory = os.path.join(self.cache_dir, f"{longitude}x{latitude}")
-        return os.path.join(directory, f'{time.strftime("%Y-%m-%d")}.json')
+        return os.path.join(directory, f'{time.strftime("%Y-%m-%dT%H")}.json')
 
     def _get_cached(self, path: str, fetch):
         if not path:
