@@ -43,6 +43,8 @@ class WeatherSync(BaseSync):
             self.logger.info("Fetching weather for all rides")
 
         # Find rides that have geo, but no weather
+        # We only look at rides that ended over an hour ago, so we know there is weather observation rather than
+        # forecast, and we have to care that now() is in system timezone.
         sess.query(orm.RideWeather)
         q = text(
             """
@@ -50,11 +52,9 @@ class WeatherSync(BaseSync):
             join ride_geo G on G.ride_id = R.id
             left join ride_weather W on W.ride_id = R.id
             where W.ride_id is null
-            and date_add(CONVERT_TZ(R.start_date, R.timezone, '{0}'), INTERVAL R.elapsed_time SECOND) < (NOW() - INTERVAL 1 HOUR) -- Only include rides that ended over an hour ago
+            and date_add(CONVERT_TZ(R.start_date, R.timezone, 'SYSTEM'), INTERVAL R.elapsed_time SECOND) < (NOW() - INTERVAL 1 HOUR)
             ;
-            """.format(
-                config.TIMEZONE
-            )
+            """
         )
 
         visual_crossing = HistoVisualCrossing(
