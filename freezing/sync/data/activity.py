@@ -9,7 +9,7 @@ from freezing.model.orm import Athlete, Ride, RideEffort, RideError, RideGeo, Ri
 from geoalchemy2.elements import WKTElement
 from sqlalchemy import and_, func
 from sqlalchemy.orm import joinedload
-from stravalib import unithelper
+from stravalib import unit_helper
 from stravalib.exc import AccessUnauthorized, Fault, ObjectNotFound
 from stravalib.model import DetailedActivity, ActivityPhotoPrimary
 
@@ -50,10 +50,10 @@ class ActivitySync(BaseSync):
         ride.start_date = strava_activity.start_date_local
 
         # We need to round so that "1.0" miles in data is "1.0" miles when we convert back from meters.
-        ride.distance = round(float(unithelper.miles(strava_activity.distance)), 3)
+        ride.distance = round(float(unit_helper.miles(strava_activity.distance)), 3)
 
-        ride.average_speed = float(unithelper.mph(strava_activity.average_speed))
-        ride.maximum_speed = float(unithelper.mph(strava_activity.max_speed))
+        ride.average_speed = float(unit_helper.mph(strava_activity.average_speed))
+        ride.maximum_speed = float(unit_helper.mph(strava_activity.max_speed))
         ride.elapsed_time = strava_activity.elapsed_time.seconds
         ride.moving_time = strava_activity.moving_time.seconds
 
@@ -70,7 +70,7 @@ class ActivitySync(BaseSync):
         ride.trainer = strava_activity.trainer
         ride.manual = strava_activity.manual
         ride.elevation_gain = float(
-            unithelper.feet(strava_activity.total_elevation_gain)
+            unit_helper.feet(strava_activity.total_elevation_gain)
         )
         ride.timezone = str(strava_activity.timezone)
 
@@ -633,12 +633,12 @@ class ActivitySync(BaseSync):
         else:
             # If ride has been cropped, we re-fetch it.
             if round(ride.distance, 2) != round(
-                float(unithelper.miles(activity.distance)), 2
+                float(unit_helper.miles(activity.distance)), 2
             ):
                 self.logger.info(
                     "Queing resync of details for activity {0!r}: "
                     "distance mismatch ({1} != {2})".format(
-                        activity, ride.distance, unithelper.miles(activity.distance)
+                        activity, ride.distance, unit_helper.miles(activity.distance)
                     )
                 )
                 ride.detail_fetched = False

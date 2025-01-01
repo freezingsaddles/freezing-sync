@@ -1,6 +1,6 @@
 import pytest
 from stravalib.client import Client
-from stravalib.model import DetailedActivity, StreamSet
+from stravalib.model import DetailedActivity
 
 @pytest.fixture
 def client():
@@ -15,7 +15,7 @@ def test_detailed_activity(client):
 def test_stream_set(client):
     activity_id = 1234567890
     streams = client.get_activity_streams(activity_id, types=['latlng', 'time', 'altitude'])
-    assert isinstance(streams, StreamSet)
+    assert isinstance(streams, dict[str, Stream])
     assert 'latlng' in streams
     assert 'time' in streams
     assert 'altitude' in streams
