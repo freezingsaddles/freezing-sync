@@ -196,7 +196,9 @@ class AutoLogger(object):
         logger = logging.getLogger(caller_name)
 
         if self.adapter_class:
-            logger = self.adapter_class(logger, *self.adapter_args, self.adapter_kwargs)
+            logger = self.adapter_class(
+                logger, *self.adapter_args, **self.adapter_kwargs
+            )
 
         return getattr(logger, name)
 
