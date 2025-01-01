@@ -11,7 +11,7 @@ from sqlalchemy import and_, func
 from sqlalchemy.orm import joinedload
 from stravalib import unithelper
 from stravalib.exc import AccessUnauthorized, Fault, ObjectNotFound
-from stravalib.model import ActivityPhotoPrimary, DetailedActivity
+from stravalib.model import DetailedActivity, ActivityPhotoPrimary
 
 from freezing.sync.config import config, statsd
 from freezing.sync.exc import (
@@ -551,10 +551,7 @@ class ActivitySync(BaseSync):
             a
             for a in activities
             if (
-                (
-                    a.type == DetailedActivity.RIDE
-                    or a.type == DetailedActivity.EBIKERIDE
-                )
+                (a.type == DetailedActivity.RIDE or a.type == DetailedActivity.EBIKERIDE)
                 and not a.manual
                 and not a.trainer
                 and not is_excluded(a)
