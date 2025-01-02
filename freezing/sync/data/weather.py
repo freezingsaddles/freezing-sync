@@ -1,9 +1,10 @@
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 from statistics import mean
 
 from freezing.model import meta, orm
+from pytz import timezone
 from sqlalchemy import text
 
 from freezing.sync.config import config
@@ -49,15 +50,16 @@ class WeatherSync(BaseSync):
             self.logger.info("Fetching weather for all rides")
 
         # Find rides that have geo, but no weather
+        # We only look at rides that ended over an hour ago, so we know there is weather observation rather than
+        # forecast, and we have to care that now() is in system timezone.
         sess.query(orm.RideWeather)
         q = text(
             """
-            select R.id from rides R
+            select R.id, ST_AsText(G.start_geo) AS start_geo from rides R
             join ride_geo G on G.ride_id = R.id
             left join ride_weather W on W.ride_id = R.id
             where W.ride_id is null
-            and date(R.start_date) < CURDATE() -- Only include rides from yesterday or before
-            and time(R.start_date) != '00:00:00' -- Exclude bad entries.
+            and date_add(CONVERT_TZ(R.start_date, R.timezone, 'SYSTEM'), INTERVAL R.elapsed_time SECOND) < (NOW() - INTERVAL 1 HOUR)
             ;
             """
         )
@@ -78,15 +80,18 @@ class WeatherSync(BaseSync):
                 break
 
             ride = sess.query(orm.Ride).get(r["id"])
+            start_geo_wkt = r["start_geo"]
             self.logger.info(
-                "Processing ride: {0} ({1}/{2})".format(ride.id, i, num_rides)
+                "Processing ride: {0} ({1}/{2}) ({3})".format(
+                    ride.id, i, num_rides, start_geo_wkt
+                )
             )
 
             try:
                 # If you can't reproduce the ancient infrastructure required by all this and so can't run any of the
                 # geoalchemy stuff you can hardcode this to debug
                 # start_geo_wkt = "POINT(-76.96 38.96)"
-                start_geo_wkt = meta.scoped_session().scalar(ride.geo.start_geo.wkt)
+                # start_geo_wkt = meta.scoped_session().scalar(ride.geo.start_geo.wkt)
                 point = parse_point_wkt(start_geo_wkt)
 
                 # We round lat/lon to decrease the granularity and allow better re-use of cache data.
@@ -100,13 +105,31 @@ class WeatherSync(BaseSync):
                     )
                 )
 
+                ride_today = datetime.now(timezone(ride.timezone))
+                start_date = ride.start_date.replace(tzinfo=timezone(ride.timezone))
+                fetch_date = start_date + timedelta(seconds=ride.elapsed_time)
+                # For caching purposes we're saying we want weather as of the end of the ride, so if
+                # we have weather from earlier in the day we don't use it. Because we're lame and
+                # don't want to handle rides that span midnight, we max to 23:59 of the day. If
+                # we are fetching old weather, we also just ask for the end of the day so we will
+                # use the latest cache file.
+                if (
+                    fetch_date.date() < ride_today.date()
+                    or fetch_date.date() != start_date.date()
+                ):
+                    fetch_date = start_date.replace(
+                        hour=23, minute=59, second=0, microsecond=0
+                    )
+
+                # VC gives us back weather in the timezone of the lat/lon that we asked. So we ask for
+                # weather in the ride-local date and interpret times accordingly.
                 hist = visual_crossing.histo_forecast(
-                    time=ride.start_date, latitude=lat, longitude=lon
+                    time=fetch_date, latitude=lat, longitude=lon
                 )
 
                 self.logger.debug("Got response in timezone {0}".format(hist.timezone))
 
-                ride_start = ride.start_date.replace(tzinfo=hist.timezone)
+                ride_start = start_date.astimezone(tz=hist.timezone)
                 ride_end = ride_start + timedelta(seconds=ride.elapsed_time)
 
                 # NOTE: if elapsed_time is significantly more than moving_time then we need to assume

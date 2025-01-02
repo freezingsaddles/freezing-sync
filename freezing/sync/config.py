@@ -109,12 +109,13 @@ def init_logging(loglevel: int = logging.INFO, color: bool = False):
         else:
             l.setLevel(logging.INFO)
 
-    # This logger is very noisy and spits out WARNING level
-    # messages that are not very useful, such as:
+    # The stravalib.attributes logger is very noisy and spits out
+    # WARNING level messages that are not very useful, such as:
     # "WARNING  [stravalib.attributes.EntityAttribute] Unable to set attribute visibility on entity <Activity id=13209828474 name=None>"
     # Silence it except for CRITICAL messages.
-
     logging.getLogger("stravalib.attributes").setLevel(logging.CRITICAL)
+    # stravalib.protocl leaks client_secrets into logs, which is bad in production especially
+    logging.getLogger("stravalib.protocol").setLevel(logging.WARNING)
 
 
 statsd = DogStatsd(host=config.DATADOG_HOST, port=config.DATADOG_PORT)
