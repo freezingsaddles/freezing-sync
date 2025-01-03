@@ -6,7 +6,7 @@ from freezing.model.orm import Athlete, Ride, RideTrack
 from geoalchemy2.elements import WKTElement
 from sqlalchemy.orm import joinedload
 from stravalib.exc import ObjectNotFound
-from stravalib.model import Activity, Stream
+from stravalib.model import Activity, StreamSet
 
 from freezing.sync.config import config
 from freezing.sync.exc import ActivityNotFound
@@ -121,7 +121,7 @@ class StreamSync(BaseSync):
                 )
                 raise
 
-    def write_ride_streams(self, streams: List[Stream], ride: Ride):
+    def write_ride_streams(self, streams: StreamSet, ride: Ride):
         """
         Store GPS track for activity as geometry (linesring) and json types in db.
 
