@@ -16,9 +16,19 @@ from freezing.sync.exc import ActivityNotFound, IneligibleActivity
 
 
 class ActivityUpdateSubscriber:
+    """
+    A class to handle activity updates from a message queue.
+    """
+
     def __init__(
         self, beanstalk_client: greenstalk.Client, shutdown_event: threading.Event
     ):
+        """
+        Initialize the ActivityUpdateSubscriber.
+
+        :param beanstalk_client: The beanstalk client.
+        :param shutdown_event: The shutdown event.
+        """
         self.client = beanstalk_client
         self.shutdown_event = shutdown_event
         self.logger = logging.getLogger(__name__)
@@ -29,6 +39,11 @@ class ActivityUpdateSubscriber:
         self._THROTTLE_DELAY = 3.0
 
     def handle_message(self, message: ActivityUpdate):
+        """
+        Handle an activity update message.
+
+        :param message: The activity update message.
+        """
         self.logger.info("Processing activity update {}".format(message))
 
         with meta.transaction_context() as session:
@@ -76,8 +91,12 @@ class ActivityUpdateSubscriber:
                 log.info(str(x))
 
     def run_forever(self):
-        # This is expecting to run in the main thread. Needs a bit of redesign
-        # if this is to be moved to a background thread.
+        """
+        Run the subscriber loop indefinitely.
+
+        This is expecting to run in the main thread. Needs a bit of redesign
+        if this is to be moved to a background thread.
+        """
         try:
             schema = ActivityUpdateSchema()
 

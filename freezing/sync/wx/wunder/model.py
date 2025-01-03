@@ -4,31 +4,38 @@ from datetime import datetime
 
 from pytz import timezone
 
-#        {
-#        "date": {
-#        "pretty": "12:52 AM EST on January 01, 2013",
-#        "year": "2013",
-#        "mon": "01",
-#        "mday": "01",
-#        "hour": "00",
-#        "min": "52",
-#        "tzname": "America/New_York"
-#        },
-#        "utcdate": {
-#        "pretty": "5:52 AM GMT on January 01, 2013",
-#        "year": "2013",
-#        "mon": "01",
-#        "mday": "01",
-#        "hour": "05",
-#        "min": "52",
-#        "tzname": "UTC"
-#        },
-#        "tempm":"3.3", "tempi":"37.9","dewptm":"-2.2", "dewpti":"28.0","hum":"68","wspdm":"11.1", "wspdi":"6.9",
-#        "wgustm":"-9999.0", "wgusti":"-9999.0","wdird":"200","wdire":"SSW","vism":"16.1", "visi":"10.0",
-#        "pressurem":"1016.1", "pressurei":"30.01","windchillm":"0.4", "windchilli":"32.7","heatindexm":"-9999",
-#        "heatindexi":"-9999","precipm":"-9999.00", "precipi":"-9999.00","conds":"Overcast","icon":"cloudy",
-#        "fog":"0","rain":"0","snow":"0","hail":"0","thunder":"0","tornado":"0",
-#        "metar":"METAR KDCA 010552Z 20006KT 10SM FEW075 OVC130 03/M02 A3001 RMK AO2 SLP161 T00331022 10044 20033 56011" },
+"""
+This has the code for the obsolete Weather Underground API.
+
+RIP, IBM killed it in 2019.
+
+Example data:
+       {
+       "date": {
+       "pretty": "12:52 AM EST on January 01, 2013",
+       "year": "2013",
+       "mon": "01",
+       "mday": "01",
+       "hour": "00",
+       "min": "52",
+       "tzname": "America/New_York"
+       },
+       "utcdate": {
+       "pretty": "5:52 AM GMT on January 01, 2013",
+       "year": "2013",
+       "mon": "01",
+       "mday": "01",
+       "hour": "05",
+       "min": "52",
+       "tzname": "UTC"
+       },
+       "tempm":"3.3", "tempi":"37.9","dewptm":"-2.2", "dewpti":"28.0","hum":"68","wspdm":"11.1", "wspdi":"6.9",
+       "wgustm":"-9999.0", "wgusti":"-9999.0","wdird":"200","wdire":"SSW","vism":"16.1", "visi":"10.0",
+       "pressurem":"1016.1", "pressurei":"30.01","windchillm":"0.4", "windchilli":"32.7","heatindexm":"-9999",
+       "heatindexi":"-9999","precipm":"-9999.00", "precipi":"-9999.00","conds":"Overcast","icon":"cloudy",
+       "fog":"0","rain":"0","snow":"0","hail":"0","thunder":"0","tornado":"0",
+       "metar":"METAR KDCA 010552Z 20006KT 10SM FEW075 OVC130 03/M02 A3001 RMK AO2 SLP161 T00331022 10044 20033 56011" },
+"""
 
 
 def build_date(dateobj):
