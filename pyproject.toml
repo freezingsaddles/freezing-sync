@@ -73,7 +73,17 @@ inline-quotes = "double"
 
 [tool.setuptools]
 # Thanks https://stackoverflow.com/a/72547402/424301
-py-modules = ["freezing"]
+py-modules = [
+    "freezing.sync",
+    "freezing.sync.wx",
+    "freezing.sync.wx.ncdc",
+    "freezing.sync.wx.visualcrossing",
+    "freezing.sync.wx.darksky",
+    "freezing.sync.wx.wunder",
+    "freezing.sync.utils",
+    "freezing.sync.cli",
+    "freezing.sync.data",
+]
 
 
 [tool.djlint]
