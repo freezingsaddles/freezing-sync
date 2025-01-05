@@ -1,2 +1,56 @@
+[project]
+name = "freezing-sync"
+version = "1.6.6"
+description = "Freezing Saddles activity and metadata sync."
+authors = [
+    { name = "Richard Bullington-McGuire", email = "rbulling@obscure.org" }
+]
+license = { name = "Apache-2.0" }
+dependencies = [
+    "APScheduler==3.11.0",
+    "GeoAlchemy2==0.16.0",
+    "PyMySQL==1.1.1",
+    "SQLAlchemy==2.0.0",
+    "colorlog==6.9.0",
+    "datadog==0.50.2",
+    "envparse==0.2.0",
+    { url = "https://github.com/freezingsaddles/freezing-model/archive/0.11.2.tar.gz" },
+    "greenstalk==2.0.2",
+    "polyline==1.4.0",
+    "pytz==2024.2",
+    "requests==2.32.3",
+    "stravalib==1.2.0"
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3"
+]
+
+[project.optional-dependencies]
+dev = [
+    "black==24.10.0",
+    "flake8==7.1.1",
+    "isort==5.13.2",
+    "pur==7.3.3",
+    "flake8-pyproject==1.1.0"
+]
+
+[project.entry-points.console_scripts]
+freezing-sync = "freezing.sync.run:main"
+freezing-sync-activities = "freezing.sync.cli.sync_activities:main"
+freezing-sync-detail = "freezing.sync.cli.sync_details:main"
+freezing-sync-streams = "freezing.sync.cli.sync_streams:main"
+freezing-sync-photos = "freezing.sync.cli.sync_photos:main"
+freezing-sync-weather = "freezing.sync.cli.sync_weather:main"
+freezing-sync-athletes = "freezing.sync.cli.sync_athletes:main"
+
 [tool.isort]
 profile = "black"
+
+[tool.flake8]
+ignore = "E203, W503, E501"
+max-line-length = 88
+max-complexity = 39
+extend-ignore = "E203"

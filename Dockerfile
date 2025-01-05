@@ -16,7 +16,8 @@ RUN pip3 wheel -r /tmp/requirements.txt --wheel-dir=/build/wheels
 ADD . /app
 WORKDIR /app
 
-RUN python3 setup.py bdist_wheel -d /build/wheels
+RUN pip3 install build
+RUN python3 -m build --wheel --outdir /build/wheels
 
 # DEPLOY
 # =====
