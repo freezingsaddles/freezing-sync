@@ -22,7 +22,7 @@ RUN python3 -m build --wheel --outdir /build/wheels
 # DEPLOY
 # =====
 
-FROM ubuntu:22.04 as deploystep
+FROM ubuntu:22.04 AS deploystep
 LABEL maintainer="Richard Bullington-McGuire <richard@obscure.org>"
 
 RUN apt-get update \
