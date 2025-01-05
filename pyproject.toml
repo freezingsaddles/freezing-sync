@@ -43,6 +43,7 @@ dev = [
     "flake8-pyproject",
     "flake8",
     "isort",
+    "pre-commit",
     "uppd",
 ]
 
@@ -59,11 +60,26 @@ freezing-sync-weather = "freezing.sync.cli.sync_weather:main"
 profile = "black"
 
 [tool.flake8]
-ignore = "E203, W503, E501"
+# Thanks https://www.reddit.com/r/learnpython/comments/rr6y69/comment/hqeqt68/?utm_source=share&utm_medium=web2x&context=3
+ignore = [
+    "E203",
+    "E501",
+    "W503",
+]
 max-line-length = 88
 max-complexity = 39
 extend-ignore = "E203"
+inline-quotes = "double"
 
 [tool.setuptools]
 # Thanks https://stackoverflow.com/a/72547402/424301
 py-modules = ["freezing"]
+
+
+[tool.djlint]
+line_break_after_multiline_tag=true
+max_line_length=88
+
+[tool.pymarkdown]
+plugins.md013.enabled = false
+extensions.front-matter.enabled = true
