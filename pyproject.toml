@@ -3,7 +3,12 @@ name = "freezing-sync"
 version = "1.6.0"
 description = "Freezing Saddles activity and metadata sync."
 authors = [
-    { name = "Richard Bullington-McGuire", email = "rbulling@obscure.org" }
+    {name = "Hans Lellelid", email = "hans@xmpl.org"},
+    {name = "Merlin Hughes"},
+    {name = "Richard Bullington-McGuire", email = "richard.bullington.mcguire@gmail.com"},
+]
+maintainers = [
+    {name = "Richard Bullington-McGuire", email = "richard.bullington.mcguire@gmail.com"},
 ]
 license = {text = "Apache License (2.0)"}
 dependencies = [
@@ -34,11 +39,11 @@ classifiers = [
 
 [project.optional-dependencies]
 dev = [
-    "black==24.10.0",
-    "flake8-pyproject==1.1.0",
-    "flake8==7.1.1",
-    "isort==5.13.2",
-    "pur==7.3.3",
+    "black",
+    "flake8-pyproject",
+    "flake8",
+    "isort",
+    "uppd",
 ]
 
 [project.entry-points.console_scripts]
@@ -58,3 +63,7 @@ ignore = "E203, W503, E501"
 max-line-length = 88
 max-complexity = 39
 extend-ignore = "E203"
+
+[tool.setuptools]
+# Thanks https://stackoverflow.com/a/72547402/424301
+py-modules = ["freezing"]
