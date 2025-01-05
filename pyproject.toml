@@ -71,20 +71,13 @@ max-complexity = 39
 extend-ignore = "E203"
 inline-quotes = "double"
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["freezing"]
+
 [tool.setuptools]
 # Thanks https://stackoverflow.com/a/72547402/424301
-py-modules = [
-    "freezing.sync",
-    "freezing.sync.wx",
-    "freezing.sync.wx.ncdc",
-    "freezing.sync.wx.visualcrossing",
-    "freezing.sync.wx.darksky",
-    "freezing.sync.wx.wunder",
-    "freezing.sync.utils",
-    "freezing.sync.cli",
-    "freezing.sync.data",
-]
-
+py-modules = []
 
 [tool.djlint]
 line_break_after_multiline_tag=true
