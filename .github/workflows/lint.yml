@@ -1,7 +1,7 @@
 ---
 name: Lint
 
-on: pull_request
+on: pull_request  # yamllint disable-line
 
 jobs:
 
@@ -25,4 +25,5 @@ jobs:
         uses: py-actions/flake8@v2
         # There are too many errors to start with to fail on this
         continue-on-error: true
-        plugins: "flake8-pyproject"
+        with:
+          plugins: "flake8-pyproject"
