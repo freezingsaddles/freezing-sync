@@ -1,10 +1,10 @@
 ---
 name: Build Tag
 
-on:
+on:  # yamllint disable-line
   push:
     tags:
-      - '*' 
+      - '*'
 
 jobs:
   build:

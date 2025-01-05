@@ -9,19 +9,20 @@ RUN apt-get update \
 
 RUN mkdir -p /build/wheels
 RUN pip3 install --upgrade pip setuptools wheel
-ADD requirements.txt /tmp/requirements.txt
-RUN pip3 wheel -r /tmp/requirements.txt --wheel-dir=/build/wheels
+ADD pyproject.toml /tmp/pyproject.toml
+RUN cd /tmp && pip3 wheel --wheel-dir=/build/wheels .
 
 # Now build the wheel for this project too.
 ADD . /app
 WORKDIR /app
 
-RUN python3 setup.py bdist_wheel -d /build/wheels
+RUN pip3 install build
+RUN python3 -m build --wheel --outdir /build/wheels
 
 # DEPLOY
 # =====
 
-FROM ubuntu:22.04 as deploystep
+FROM ubuntu:22.04 AS deploystep
 LABEL maintainer="Richard Bullington-McGuire <richard@obscure.org>"
 
 RUN apt-get update \
