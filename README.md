@@ -1,16 +1,32 @@
 # Freezing Saddles Sync
 
-This component is part of the [Freezing Saddles](http://freezingsaddles.com) project.  Its purpose is to
-1. receive workflow messages published from [freezing-nq](https://github.com/freezingsaddles/freezing-nq) and perform Strava API calls to retrieve activities/streams/etc.
+This component is part of the [Freezing Saddles](http://freezingsaddles.com) project.  Its purpose is to:
+
+1. Receive workflow messages published from [freezing-nq](https://github.com/freezingsaddles/freezing-nq) and perform Strava API calls to retrieve activities/streams/etc.
 2. Perform periodic (cron-like) double checks to make sure that we haven't missed any activity updates/deletes.
 3. Perform periodic updates for non-Strava data (e.g. weather data).
 
-## Deploying With Docker
+## Development Setup
+
+This project supports local development both with Docker and by running directly on the host.
+
+To get started, you should clone the project and install the dependencies:
+
+```bash
+shell$ git clone https://github.com/freezingsaddles/freezing-sync
+shell$ cd freezing-web
+shell$ python3 -m venv env
+shell$ source env/bin/activate
+(env) shell$ pip install -e '.[dev]'
+``````
+
+### Deploying With Docker
 
 See [freezing-compose](https://github.com/freezingsaddles/freezing-compose) for guide to deploying this in production along
 with the related containers.
 
 This component is designed to run as a container and should be configured with environment variables for:
+
 - `BEANSTALKD_HOST`: The hostname (probably a container link) to a beanstalkd server.
 - `BEANSTALKD_PORT`: The port for beanstalkd server (default 11300)
 - `SQLALCHEMY_URL`: The URL to the database.
@@ -25,14 +41,16 @@ This component is designed to run as a container and should be configured with e
 - `UPLOAD_GRACE_PERIOD`: How long (days) can people upload rides after competition>
 - `EXCLUDE_KEYWORDS`: Any keywords to match on to exclude rides (default: "#NoBAFS"). Note: these are not case-sensitive.
 
-## Running Locally
+### Running Locally
 
 If you are running this component locally for development/debugging, you may set these values in a configuration file, and specify the path to this file with the `APP_SETTINGS` environment variable.  For example:
+
 ```bash
 APP_SETTINGS=local.cfg freezing-sync
 ```
 
 You can run individual sync commands too:
+
 ```bash
 APP_SETTINGS=local.cfg python -m freezing.sync.cli.sync_weather --debug --limit 1
 ```
@@ -41,7 +59,7 @@ There are a few additional settings you may need (i.e. not to be default) when n
 - `STRAVA_ACTIVITY_CACHE_DIR`: Where to put cached activities (absolute path is a good idea).
 - `VISUAL_CROSSING_CACHE_DIR`: Similarly, where should weather files be stored?
 
-## Running Unit Tests
+### Running Unit Tests
 
 To run the unit tests, you can use `pytest`. Make sure you have all the dependencies installed, including the ones in `requirements-test.txt`. You can run the tests with the following command:
 
@@ -49,10 +67,16 @@ To run the unit tests, you can use `pytest`. Make sure you have all the dependen
 pytest
 ```
 
-# Legal
+### Coding standards
+
+The `freezing-sync` code is intended to be [PEP-8](https://www.python.org/dev/peps/pep-0008/) compliant. Code formatting is done with [black](https://black.readthedocs.io/en/stable/), [isort](https://pycqa.github.io/isort/) and [djlint](https://www.djlint.com/) and can be linted with [flake8](http://flake8.pycqa.org/en/latest/). See the [pyproject.toml](pyproject.toml) file and install the dev dependencies to get these tools.
+
+This project also has _optional_ support for [pre-commit](https://pre-commit.org) to run these checks automatically before you commit. To install pre-commit, install the `dev` dependencies and then run `pre-commit install` in the root of the repository.
+
+## Legal
 
 This software is a an [Apache 2.0 Licensed](LICENSE), community-driven effort, and as such the contributions are owned by the individual contributors:
 
-Copyright 2018 Hans Lillelid <br>
-Copyright 2020 Richard Bullington-McGuire <br>
-Copyright 2020 Merlin Hughes <br>
+- Copyright 2018 Hans Lillelid
+- Copyright 2020 Richard Bullington-McGuire
+- Copyright 2020 Merlin Hughes

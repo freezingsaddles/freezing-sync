@@ -1,2 +1,86 @@
+[project]
+name = "freezing-sync"
+version = "1.6.0"
+description = "Freezing Saddles activity and metadata sync."
+authors = [
+    {name = "Hans Lellelid", email = "hans@xmpl.org"},
+    {name = "Merlin Hughes"},
+    {name = "Richard Bullington-McGuire", email = "richard.bullington.mcguire@gmail.com"},
+]
+maintainers = [
+    {name = "Richard Bullington-McGuire", email = "richard.bullington.mcguire@gmail.com"},
+]
+license = {text = "Apache License (2.0)"}
+dependencies = [
+    "APScheduler==3.11.0",
+    "GeoAlchemy2==0.16.0",
+    "PyMySQL==1.1.1",
+    "SQLAlchemy==1.4.54",
+    "colorlog==6.9.0",
+    "datadog==0.50.2",
+    "envparse==0.2.0",
+    "freezing-model @ https://github.com/freezingsaddles/freezing-model/archive/0.11.2.tar.gz",
+    "greenstalk==2.0.2",
+    "polyline==1.4.0",
+    "pytz==2024.2",
+    "requests==2.32.3",
+    "stravalib==2.1.0",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Games",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "flake8-pyproject",
+    "flake8",
+    "isort",
+    "pre-commit",
+    "pytest",
+    "uppd",
+]
+
+[project.entry-points.console_scripts]
+freezing-sync = "freezing.sync.run:main"
+freezing-sync-activities = "freezing.sync.cli.sync_activities:main"
+freezing-sync-athletes = "freezing.sync.cli.sync_athletes:main"
+freezing-sync-detail = "freezing.sync.cli.sync_details:main"
+freezing-sync-photos = "freezing.sync.cli.sync_photos:main"
+freezing-sync-streams = "freezing.sync.cli.sync_streams:main"
+freezing-sync-weather = "freezing.sync.cli.sync_weather:main"
+
 [tool.isort]
 profile = "black"
+
+[tool.flake8]
+# Thanks https://www.reddit.com/r/learnpython/comments/rr6y69/comment/hqeqt68/?utm_source=share&utm_medium=web2x&context=3
+ignore = [
+    "E203",
+    "E501",
+    "W503",
+]
+max-line-length = 88
+max-complexity = 39
+extend-ignore = "E203"
+inline-quotes = "double"
+
+[tool.setuptools]
+# Thanks https://stackoverflow.com/a/72547402/424301
+py-modules = ["freezing"]
+
+
+[tool.djlint]
+line_break_after_multiline_tag=true
+max_line_length=88
+
+[tool.pymarkdown]
+plugins.md013.enabled = false
+extensions.front-matter.enabled = true
