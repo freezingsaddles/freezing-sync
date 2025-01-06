@@ -22,7 +22,7 @@ from freezing.sync.wx.visualcrossing.api import HistoVisualCrossing
 # credit for the blizzard that starts at one minute past midnight.
 class WeatherSync(BaseSync):
     """
-    Synchronize rides from data with the database.
+    A class to synchronize weather data for rides.
     """
 
     name = "sync-weather"
@@ -31,6 +31,13 @@ class WeatherSync(BaseSync):
     def sync_weather(
         self, clear: bool = False, limit: int = None, cache_only: bool = False
     ):
+        """
+        Synchronize weather data for rides.
+
+        :param clear: Whether to clear existing weather data.
+        :param limit: Limit the number of rides to process.
+        :param cache_only: Whether to use only cached weather data.
+        """
         sess = meta.scoped_session()
 
         if clear:

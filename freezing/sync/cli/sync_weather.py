@@ -13,6 +13,11 @@ class SyncWeatherScript(BaseCommand):
     description = "Sync wunderground.com weather data."
 
     def build_parser(self):
+        """
+        Build the argument parser for the command.
+
+        :return: The argument parser.
+        """
         parser = super().build_parser()
 
         parser.add_argument(
@@ -39,6 +44,11 @@ class SyncWeatherScript(BaseCommand):
         return parser
 
     def execute(self, args):
+        """
+        Perform actual implementation for this command.
+
+        :param args: The parsed options/args from argparse.
+        """
         fetcher = WeatherSync(logger=self.logger)
         fetcher.sync_weather(
             clear=args.clear, cache_only=args.cache_only, limit=args.limit

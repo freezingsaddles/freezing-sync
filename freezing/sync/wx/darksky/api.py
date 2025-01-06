@@ -24,6 +24,14 @@ class HistoDarkSky(object):
         cache_only: bool = False,
         logger: Logger = None,
     ):
+        """
+        Initialize the HistoDarkSky object.
+
+        :param api_key: The API key for Dark Sky.
+        :param cache_dir: The directory for caching data.
+        :param cache_only: Whether to use only cached data.
+        :param logger: The logger to use.
+        """
         self.api_key = api_key
         self.cache_dir = cache_dir
         self.cache_only = cache_only
@@ -34,6 +42,14 @@ class HistoDarkSky(object):
     def histo_forecast(
         self, time: datetime, latitude: float, longitude: float
     ) -> Forecast:
+        """
+        Get the historical forecast for a specific time and location.
+
+        :param time: The time for the forecast.
+        :param latitude: The latitude of the location.
+        :param longitude: The longitude of the location.
+        :return: The forecast data.
+        """
         json = self._get_cached(
             path=self._cache_file(time=time, longitude=longitude, latitude=latitude),
             fetch=lambda: self._forecast(
@@ -43,11 +59,27 @@ class HistoDarkSky(object):
         return Forecast(json)
 
     def forecast(self, time: datetime, latitude: float, longitude: float) -> Forecast:
+        """
+        Get the forecast for a specific time and location.
+
+        :param time: The time for the forecast.
+        :param latitude: The latitude of the location.
+        :param longitude: The longitude of the location.
+        :return: The forecast data.
+        """
         return Forecast(
             self._forecast(time=time, latitude=latitude, longitude=longitude)
         )
 
     def _forecast(self, time: datetime, latitude: float, longitude: float):
+        """
+        Fetch the forecast data from the Dark Sky API.
+
+        :param time: The time for the forecast.
+        :param latitude: The latitude of the location.
+        :param longitude: The longitude of the location.
+        :return: The forecast data in JSON format.
+        """
         response = get(
             url=f"https://api.darksky.net/forecast/{self.api_key}/{latitude},{longitude},{time.isoformat()}",
             params={"units": "us", "exclude": "minutely,alerts,flags"},
@@ -61,12 +93,27 @@ class HistoDarkSky(object):
         return loads(response.text)
 
     def _cache_file(self, time: datetime, longitude: float, latitude: float):
+        """
+        Generate the cache file path for the forecast data.
+
+        :param time: The time for the forecast.
+        :param longitude: The longitude of the location.
+        :param latitude: The latitude of the location.
+        :return: The cache file path.
+        """
         if not self.cache_dir:
             return None  # where are all the monads
         directory = os.path.join(self.cache_dir, f"{longitude}x{latitude}")
         return os.path.join(directory, f'{time.strftime("%Y-%m-%d")}.json')
 
     def _get_cached(self, path: str, fetch):
+        """
+        Get the cached forecast data or fetch it if not available.
+
+        :param path: The cache file path.
+        :param fetch: The function to fetch the forecast data.
+        :return: The forecast data in JSON format.
+        """
         if not path:
             return fetch()
 

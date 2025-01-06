@@ -3,10 +3,19 @@ from freezing.sync.data.streams import StreamSync
 
 
 class SyncActivityStreams(BaseCommand):
+    """
+    Sync activity streams.
+    """
+
     name = "sync-activity-streams"
     description = "Sync activity streams."
 
     def build_parser(self):
+        """
+        Build the argument parser for the command.
+
+        :return: The argument parser.
+        """
         parser = super().build_parser()
         parser.add_argument(
             "--athlete-id",
@@ -46,6 +55,11 @@ class SyncActivityStreams(BaseCommand):
         return parser
 
     def execute(self, args):
+        """
+        Perform actual implementation for this command.
+
+        :param args: The parsed options/args from argparse.
+        """
         fetcher = StreamSync(logger=self.logger)
         fetcher.sync_streams(
             athlete_id=args.athlete_id,
