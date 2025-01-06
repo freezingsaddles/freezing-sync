@@ -1,10 +1,10 @@
 ---
 name: Build and Deploy Latest
 
-on:
+on:  # yamllint disable-line
   push:
     branches:
-      - 'master'
+      - 'main'
 
 jobs:
 

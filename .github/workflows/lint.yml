@@ -1,10 +1,10 @@
 ---
 name: Lint
 
-on: pull_request
+on: pull_request  # yamllint disable-line
 
 jobs:
-  
+
   # Thanks https://black.readthedocs.io/en/stable/integrations/github_actions.html
   lint:
     runs-on: ubuntu-latest
@@ -20,8 +20,10 @@ jobs:
       - name: isort Lint
         uses: isort/isort-action@v1
         with:
-            requirements-files: "requirements.txt requirements-test.txt"
+          requirements-files: "pyproject.toml"
       - name: flake8 Lint
         uses: py-actions/flake8@v2
         # There are too many errors to start with to fail on this
         continue-on-error: true
+        with:
+          plugins: "flake8-pyproject"
