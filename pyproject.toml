@@ -44,6 +44,7 @@ dev = [
     "flake8",
     "isort",
     "pre-commit",
+    "pytest",
     "uppd",
 ]
 
@@ -83,3 +84,9 @@ max_line_length=88
 [tool.pymarkdown]
 plugins.md013.enabled = false
 extensions.front-matter.enabled = true
+
+[tool.pytest.ini_options]
+pythonpath = ""
+addopts = [
+    "--import-mode=importlib",
+]
