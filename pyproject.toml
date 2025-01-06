@@ -72,10 +72,10 @@ max-complexity = 39
 extend-ignore = "E203"
 inline-quotes = "double"
 
-[tool.setuptools]
-# Thanks https://stackoverflow.com/a/72547402/424301
-py-modules = ["freezing"]
-
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["freezing"]
+namespaces = true
 
 [tool.djlint]
 line_break_after_multiline_tag=true
@@ -84,3 +84,9 @@ max_line_length=88
 [tool.pymarkdown]
 plugins.md013.enabled = false
 extensions.front-matter.enabled = true
+
+[tool.pytest.ini_options]
+pythonpath = "."
+addopts = [
+    "--import-mode=importlib",
+]
