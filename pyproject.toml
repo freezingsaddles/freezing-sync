@@ -86,7 +86,7 @@ plugins.md013.enabled = false
 extensions.front-matter.enabled = true
 
 [tool.pytest.ini_options]
-pythonpath = ""
+pythonpath = "."
 addopts = [
     "--import-mode=importlib",
 ]
