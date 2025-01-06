@@ -5,7 +5,7 @@ on: [push, pull_request]  # yamllint disable-line
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     strategy:
       matrix:
