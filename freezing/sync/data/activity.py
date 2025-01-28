@@ -426,7 +426,7 @@ class ActivitySync(BaseSync):
             raise
         try:
             self.logger.info("Writing out primary photo for {!r}".format(ride))
-            if strava_activity.total_photo_count > 0:
+            if strava_activity.total_photo_count > 0 and not ride.private:
                 self.write_ride_photo_primary(strava_activity, ride)
             else:
                 self.logger.debug("No photos for {!r}".format(ride))
