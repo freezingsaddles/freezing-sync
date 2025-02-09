@@ -7,7 +7,7 @@ import arrow
 from freezing.model import meta
 from freezing.model.orm import Athlete, Ride, RideEffort, RideError, RideGeo, RidePhoto
 from geoalchemy2.elements import WKTElement
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, text
 from sqlalchemy.orm import joinedload
 from stravalib import unithelper
 from stravalib.exc import AccessUnauthorized, Fault, ObjectNotFound
@@ -23,6 +23,9 @@ from freezing.sync.exc import (
 from freezing.sync.utils.cache import CachingActivityFetcher
 
 from . import BaseSync, StravaClientForAthlete
+
+# Amount of activity overlap to permit
+_overlap_ignore = timedelta(minutes=3)
 
 
 class ActivitySync(BaseSync):
@@ -375,6 +378,10 @@ class ActivitySync(BaseSync):
                         exclude_keywords=config.EXCLUDE_KEYWORDS,
                     )
 
+                    self.check_db_overlap(
+                        strava_activity,
+                    )
+
                     ride = self.write_ride(strava_activity)
                     self.update_ride_complete(
                         strava_activity=strava_activity, ride=ride
@@ -446,7 +453,7 @@ class ActivitySync(BaseSync):
         *,
         start_date: datetime,
         end_date: datetime,
-        exclude_keywords: List[str]
+        exclude_keywords: List[str],
     ):
         """
         Asserts that activity is valid for the competition.
@@ -507,6 +514,48 @@ class ActivitySync(BaseSync):
                     )
                 )
 
+    # Reject any rides that overlap with existing rides in the database, mostly to skip when
+    # riders use multiple devices and forget to delete the duplicate activities. This will
+    # cause problems for riders who hand-edit activities. In particular, if you slice the
+    # start and end off a ride and join those both into one ride, that will overlap the main
+    # part of the ride and one will be excluded. Just upload three rides instead.
+    # Allow some overlap at the start end, just in case .. things.
+    # Use local time because that's what is stored in the database.
+    def check_db_overlap(
+        self,
+        activity: Activity,
+    ):
+        overlapping_rides = (
+            meta.scoped_session()
+            .execute(
+                text(
+                    """
+                      select R.id
+                      from rides R
+                      where R.athlete_id = :athlete_id
+                      and R.id != :activity_id
+                      and R.start_date <= :end_date
+                      AND DATE_ADD(R.start_date, INTERVAL R.elapsed_time SECOND) >= :start_date
+                    """
+                ).bindparams(
+                    athlete_id=activity.athlete.id,
+                    activity_id=activity.id,
+                    start_date=activity.start_date_local + _overlap_ignore,
+                    end_date=(
+                        activity.start_date_local
+                        + activity.elapsed_time
+                        - _overlap_ignore
+                    ),
+                ),
+            )
+            .fetchall()
+        )
+        if overlapping_rides:
+            ride_ids = ", ".join(str(r[0]) for r in overlapping_rides)
+            raise IneligibleActivity(
+                f"Skipping ride {activity.id} because it overlaps with existing ride {ride_ids}."
+            )
+
     def list_rides(
         self,
         athlete: Athlete,
@@ -558,7 +607,36 @@ class ActivitySync(BaseSync):
             )
         ]
 
-        return filtered_rides
+        # If this rider has overlapping rides, just select the largest ride. This is because when
+        # we run a full sync the database may be empty so we pull all rides from Strava then filter
+        # and then insert, so filtering can't look at the database.
+        def overlaps_larger(activity, activities):
+            overlaps = [
+                a
+                for a in activities
+                if a.id != activity.id
+                and a.distance > activity.distance
+                and (
+                    a.start_date + _overlap_ignore
+                    <= activity.start_date + activity.elapsed_time
+                )
+                and (
+                    a.start_date + a.elapsed_time
+                    >= activity.start_date + _overlap_ignore
+                )
+            ]
+            if overlaps:
+                overlap_ids = ", ".join([str(a.id) for a in overlaps])
+                self.logger.info(
+                    f"Excluding ride {activity.id} because of overlap with {overlap_ids}"
+                )
+                return True
+
+        non_overlapping_rides = [
+            a for a in filtered_rides if not overlaps_larger(a, filtered_rides)
+        ]
+
+        return non_overlapping_rides
 
     def write_ride(self, activity: Activity) -> Ride:
         """
