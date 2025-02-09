@@ -69,6 +69,6 @@ This project also has _optional_ support for [pre-commit](https://pre-commit.org
 
 This software is a an [Apache 2.0 Licensed](LICENSE), community-driven effort, and as such the contributions are owned by the individual contributors:
 
-- Copyright 2018 Hans Lillelid
+- Copyright 2018 Hans Lellelid
 - Copyright 2020 Richard Bullington-McGuire
 - Copyright 2020 Merlin Hughes
