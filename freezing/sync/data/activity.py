@@ -480,8 +480,8 @@ class ActivitySync(BaseSync):
 
         if activity.type not in (Activity.RIDE, Activity.EBIKERIDE):
             raise IneligibleActivity(
-                "Skipping ride {0} ({1!r}) because it is not a RIDE or EBIKERIDE.".format(
-                    activity.id, activity.name
+                "Skipping {0} activity {1} ({2!r}) because it is not a RIDE or EBIKERIDE.".format(
+                    activity.type, activity.id, activity.name
                 )
             )
 
