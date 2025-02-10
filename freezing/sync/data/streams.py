@@ -87,9 +87,7 @@ class StreamSync(BaseSync):
                 )
             )
 
-            ride = (
-                session.query(Ride).options(joinedload(Ride.athlete)).get(activity_id)
-            )
+            ride = session.get(Ride, activity_id, options=[joinedload(Ride.athlete)])
             if not ride:
                 raise RuntimeError("Cannot load streams before fetching activity.")
 
