@@ -144,7 +144,7 @@ class StreamSync(BaseSync):
             ride.track_fetched = None
         else:
             # Start by removing any existing segments for the ride.
-            meta.engine.execute(
+            session.execute(
                 RideTrack.__table__.delete().where(RideTrack.ride_id == ride.id)
             )
 
