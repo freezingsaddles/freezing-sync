@@ -87,9 +87,7 @@ class StreamSync(BaseSync):
                 )
             )
 
-            ride = (
-                session.query(Ride).options(joinedload(Ride.athlete)).get(activity_id)
-            )
+            ride = session.get(Ride, activity_id, options=[joinedload(Ride.athlete)])
             if not ride:
                 raise RuntimeError("Cannot load streams before fetching activity.")
 
@@ -134,8 +132,9 @@ class StreamSync(BaseSync):
 
             lonlat_points = [(lon, lat) for (lat, lon) in streams_dict["latlng"].data]
 
-            if not lonlat_points:
-                raise ValueError("No data points in latlng streams.")
+            # mysql does not admit the possibility of one point in a line
+            if len(lonlat_points) < 2:
+                raise ValueError("Insufficient data points in latlng streams.")
 
         except (KeyError, ValueError) as x:
             self.logger.info(

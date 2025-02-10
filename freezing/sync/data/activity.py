@@ -347,7 +347,7 @@ class ActivitySync(BaseSync):
             )
 
             try:
-                athlete = session.query(Athlete).get(athlete_id)
+                athlete = session.get(Athlete, athlete_id)
                 if not athlete:
                     self.logger.warning(
                         "Athlete {} not found in database, ignoring activity {}".format(
@@ -480,8 +480,8 @@ class ActivitySync(BaseSync):
 
         if activity.type not in (Activity.RIDE, Activity.EBIKERIDE):
             raise IneligibleActivity(
-                "Skipping ride {0} ({1!r}) because it is not a RIDE or EBIKERIDE.".format(
-                    activity.id, activity.name
+                "Skipping {0} activity {1} ({2!r}) because it is not a RIDE or EBIKERIDE.".format(
+                    activity.type, activity.id, activity.name
                 )
             )
 
@@ -596,7 +596,7 @@ class ActivitySync(BaseSync):
         assert activity.distance is not None
 
         # Find the model object for that athlete (or create if doesn't exist)
-        athlete = session.query(Athlete).get(athlete_id)
+        athlete = session.get(Athlete, athlete_id)
         if not athlete:
             # The athlete has to exist since otherwise we wouldn't be able to query their rides
             raise ValueError(
@@ -610,7 +610,7 @@ class ActivitySync(BaseSync):
             ride_geo.ride_id = activity.id
             session.merge(ride_geo)
 
-        ride = session.query(Ride).get(activity.id)
+        ride = session.get(Ride, activity.id)
         new_ride = ride is None
         if ride is None:
             ride = Ride(activity.id)
