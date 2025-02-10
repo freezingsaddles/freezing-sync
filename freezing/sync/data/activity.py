@@ -525,7 +525,7 @@ class ActivitySync(BaseSync):
         self,
         activity: Activity,
     ):
-        overlapping_rides = (
+        overlaps = (
             meta.scoped_session()
             .execute(
                 text(
@@ -536,6 +536,7 @@ class ActivitySync(BaseSync):
                       and R.id != :activity_id
                       and R.start_date <= :end_date
                       AND DATE_ADD(R.start_date, INTERVAL R.elapsed_time SECOND) >= :start_date
+                      AND R.name not like '%#nooverlap%'
                     """
                 ).bindparams(
                     athlete_id=activity.athlete.id,
@@ -550,8 +551,8 @@ class ActivitySync(BaseSync):
             )
             .fetchall()
         )
-        if overlapping_rides:
-            ride_ids = ", ".join(str(r[0]) for r in overlapping_rides)
+        if overlaps and "#nooverlap" not in activity.name.lower():
+            ride_ids = ", ".join(str(r[0]) for r in overlaps)
             raise IneligibleActivity(
                 f"Skipping ride {activity.id} because it overlaps with existing ride {ride_ids}."
             )
@@ -615,6 +616,7 @@ class ActivitySync(BaseSync):
                 a
                 for a in activities
                 if a.id != activity.id
+                and "#nooverlap" not in a.name.lower()
                 and a.distance > activity.distance
                 and (
                     a.start_date + _overlap_ignore
@@ -625,7 +627,7 @@ class ActivitySync(BaseSync):
                     >= activity.start_date + _overlap_ignore
                 )
             ]
-            if overlaps:
+            if overlaps and "#nooverlap" not in activity.name.lower():
                 overlap_ids = ", ".join([str(a.id) for a in overlaps])
                 self.logger.info(
                     f"Excluding ride {activity.id} because of overlap with {overlap_ids}"
@@ -690,10 +692,10 @@ class ActivitySync(BaseSync):
 
         ride = session.get(Ride, activity.id)
         new_ride = ride is None
-        if ride is None:
-            ride = Ride(activity.id)
 
         if new_ride:
+            ride = Ride(activity.id)
+
             # Set the "workflow flags".  These all default to False in the database.  The value of NULL means
             # that the workflow flag does not apply (e.g. do not bother fetching this)
 
@@ -707,6 +709,8 @@ class ActivitySync(BaseSync):
                 ride.photos_fetched = False
             else:
                 ride.photos_fetched = None
+
+            session.add(ride)
 
         else:
             # If ride has been cropped, we re-fetch it.
@@ -728,8 +732,6 @@ class ActivitySync(BaseSync):
 
         if new_ride:
             statsd.histogram("strava.activity.distance", ride.distance)
-
-        session.add(ride)
 
         return ride
 
