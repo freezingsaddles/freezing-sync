@@ -24,8 +24,8 @@ class CachingAthleteObjectFetcher(metaclass=abc.ABCMeta):
         self.cache_basedir = cache_basedir
         self.client = client
 
-    def filename(self, *, athlete_id: int, object_id: int):
-        return "{}.json".format(athlete_id)
+    def filename(self, *, object_id: int):
+        return "{}_{}.json".format(object_id, self.object_type)
 
     def cache_dir(self, athlete_id: int) -> str:
         """
@@ -48,7 +48,7 @@ class CachingAthleteObjectFetcher(metaclass=abc.ABCMeta):
         """
         directory = self.cache_dir(athlete_id)
 
-        object_fname = self.filename(athlete_id=athlete_id, object_id=object_id)
+        object_fname = self.filename(object_id=object_id)
         cache_path = os.path.join(directory, object_fname)
 
         with open(cache_path, "w") as fp:
@@ -56,17 +56,14 @@ class CachingAthleteObjectFetcher(metaclass=abc.ABCMeta):
 
         return cache_path
 
-    def get_cached_object_json(
-        self, athlete_id: int, activity_id: int
-    ) -> Dict[str, Any]:
+    def get_cached_object_json(self, athlete_id: int, object_id: int) -> Dict[str, Any]:
         """
         Retrieves raw object from cached directory.
         """
         directory = self.cache_dir(athlete_id)
 
-        activity_fname = "{}.json".format(activity_id)
-
-        cache_path = os.path.join(directory, activity_fname)
+        object_fname = self.filename(object_id=object_id)
+        cache_path = os.path.join(directory, object_fname)
 
         activity_json = None
         if os.path.exists(cache_path):
@@ -108,13 +105,13 @@ class CachingAthleteObjectFetcher(metaclass=abc.ABCMeta):
 
         :param athlete_id:
         :param object_id:
-        :param use_cache: Allow use of cache.
-        :param only_cache: Only use cache (no download)
+        :param use_cache: Allow reading from cache.
+        :param only_cache: Only read from cache (no download)
         :return:
         """
         if use_cache:
             object_json = self.get_cached_object_json(
-                athlete_id=athlete_id, activity_id=object_id
+                athlete_id=athlete_id, object_id=object_id
             )
         else:
             object_json = None
@@ -130,8 +127,8 @@ class CachingAthleteObjectFetcher(metaclass=abc.ABCMeta):
                 return None
 
             self.logger.info(
-                "[CACHE-MISS] Fetching {} detail for {!r}".format(
-                    self.object_type, object_id
+                "[CACHE-{}] Fetching {} detail for {!r}".format(
+                    "MISS" if use_cache else "BYPASS", self.object_type, object_id
                 )
             )
 
@@ -207,9 +204,6 @@ class CachingActivityFetcher(CachingAthleteObjectFetcher):
 
 class CachingStreamFetcher(CachingAthleteObjectFetcher):
     object_type = "streams"
-
-    def filename(self, *, athlete_id: int, object_id: int):
-        return "{}_streams.json".format(athlete_id)
 
     def download_object_json(
         self, *, athlete_id: int, object_id: int

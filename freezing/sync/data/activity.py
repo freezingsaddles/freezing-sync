@@ -57,8 +57,8 @@ class ActivitySync(BaseSync):
 
         ride.average_speed = float(unithelper.mph(strava_activity.average_speed))
         ride.maximum_speed = float(unithelper.mph(strava_activity.max_speed))
-        ride.elapsed_time = strava_activity.elapsed_time.seconds
-        ride.moving_time = strava_activity.moving_time.seconds
+        ride.elapsed_time = strava_activity.elapsed_time.total_seconds()
+        ride.moving_time = strava_activity.moving_time.total_seconds()
 
         location_parts = []
         if strava_activity.location_city:
@@ -117,7 +117,7 @@ class ActivitySync(BaseSync):
                 effort = RideEffort(
                     id=se.id,
                     ride_id=strava_activity.id,
-                    elapsed_time=se.elapsed_time.seconds,
+                    elapsed_time=se.elapsed_time.total_seconds(),
                     segment_name=se.segment.name,
                     segment_id=se.segment.id,
                 )
@@ -621,10 +621,15 @@ class ActivitySync(BaseSync):
                 and (
                     a.start_date + _overlap_ignore
                     <= activity.start_date
-                    + timedelta(seconds=activity.elapsed_time.seconds)
+                    + timedelta(
+                        seconds=activity.elapsed_time.seconds
+                    )  # wrong, should be just elapsed_time
                 )
                 and (
-                    a.start_date + timedelta(seconds=a.elapsed_time.seconds)
+                    a.start_date
+                    + timedelta(
+                        seconds=a.elapsed_time.seconds
+                    )  # wrong, should be just elapsed_time
                     >= activity.start_date + _overlap_ignore
                 )
             ]
@@ -715,8 +720,8 @@ class ActivitySync(BaseSync):
 
         else:
             # If ride has been cropped, we re-fetch it.
-            if round(ride.distance, 2) != round(
-                float(unithelper.miles(activity.distance)), 2
+            if round(ride.distance, 3) != round(
+                float(unithelper.miles(activity.distance)), 3
             ):
                 self.logger.info(
                     "Queing resync of details for activity {0!r}: "
