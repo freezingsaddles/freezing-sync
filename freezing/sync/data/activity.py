@@ -239,8 +239,8 @@ class ActivitySync(BaseSync):
             )
             return
 
-        # Start by removing any priamry photos for this ride.
-        meta.engine.execute(
+        # Start by removing any primary photos for this ride.
+        session.execute(
             RidePhoto.__table__.delete().where(
                 and_(RidePhoto.ride_id == strava_activity.id, RidePhoto.primary == True)
             )
@@ -620,10 +620,11 @@ class ActivitySync(BaseSync):
                 and a.distance > activity.distance
                 and (
                     a.start_date + _overlap_ignore
-                    <= activity.start_date + activity.elapsed_time
+                    <= activity.start_date
+                    + timedelta(seconds=activity.elapsed_time.seconds)
                 )
                 and (
-                    a.start_date + a.elapsed_time
+                    a.start_date + timedelta(seconds=a.elapsed_time.seconds)
                     >= activity.start_date + _overlap_ignore
                 )
             ]
