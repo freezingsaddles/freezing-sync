@@ -58,10 +58,18 @@ class StreamSync(BaseSync):
                 sf = CachingStreamFetcher(
                     cache_basedir=config.STRAVA_ACTIVITY_CACHE_DIR, client=client
                 )
+
+                # Bypass the cache if we appear to be trying to refetch the ride because of change.
+                # This is a different bypass cache behaviour to efforts, but the code is opaque and
+                # effects uncertain. This field is set to false when a ride is resynced because its
+                # distance has changed. So good to avoid cache in that case. However it's also set
+                # to false in other cases maybe probably.
+                bypass_cache = not ride.track_fetched
+
                 streams = sf.fetch(
                     athlete_id=ride.athlete_id,
                     object_id=ride.id,
-                    use_cache=use_cache,
+                    use_cache=use_cache and not bypass_cache,
                     only_cache=only_cache,
                 )
                 if streams:
