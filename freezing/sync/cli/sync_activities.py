@@ -18,6 +18,11 @@ class SyncActivitiesScript(BaseCommand):
     description = "Syncs all activities for registered athletes."
 
     def build_parser(self):
+        """
+        Build the argument parser for the command.
+
+        :return: The argument parser.
+        """
         parser = super(SyncActivitiesScript, self).build_parser()
 
         parser.add_argument(
@@ -55,6 +60,11 @@ class SyncActivitiesScript(BaseCommand):
         return parser
 
     def execute(self, args):
+        """
+        Perform actual implementation for this command.
+
+        :param args: The parsed options/args from argparse.
+        """
         fetcher = ActivitySync(logger=self.logger)
         fetcher.sync_rides(
             start_date=args.start_date,

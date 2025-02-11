@@ -12,6 +12,7 @@ from math import sin, tan
 
 import pytz
 from dateutil.tz import tzlocal
+from logger import logger
 
 
 class Sun:
@@ -150,6 +151,6 @@ class Sun:
 if __name__ == "__main__":
     s = Sun(lat=39.45536859, lon=-77.4142634)
     when = datetime.now(tzinfo=pytz.timezone("America/New_York"))
-    print(datetime.today())
-    print(s.sunrise(when))
-    print(s.sunset(when))
+    logger.info(datetime.today())
+    logger.info(s.sunrise(when))
+    logger.info(s.sunset(when))

@@ -3,10 +3,19 @@ from freezing.sync.data.activity import ActivitySync
 
 
 class SyncActivityDetails(BaseCommand):
+    """
+    Sync the activity details JSON.
+    """
+
     name = "sync-activity-detail"
     description = "Sync the activity details JSON."
 
     def build_parser(self):
+        """
+        Build the argument parser for the command.
+
+        :return: The argument parser.
+        """
         parser = super().build_parser()
         parser.add_argument(
             "--athlete-id",
@@ -46,6 +55,11 @@ class SyncActivityDetails(BaseCommand):
         return parser
 
     def execute(self, args):
+        """
+        Perform actual implementation for this command.
+
+        :param args: The parsed options/args from argparse.
+        """
         fetcher = ActivitySync(logger=self.logger)
         fetcher.sync_rides_detail(
             athlete_id=args.athlete_id,

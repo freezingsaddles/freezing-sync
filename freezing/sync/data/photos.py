@@ -11,10 +11,19 @@ from . import BaseSync
 
 
 class PhotoSync(BaseSync):
+    """
+    A class to synchronize photos.
+    """
+
     name = "sync-photos"
     description = "Sync (non-primary) ride photos."
 
     def sync_photos(self):
+        """
+        Synchronize photos.
+
+        :return: None
+        """
         with meta.transaction_context() as sess:
             q = sess.query(orm.Ride)
             q = q.filter_by(photos_fetched=False, private=False)

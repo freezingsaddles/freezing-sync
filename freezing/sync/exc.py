@@ -1,27 +1,43 @@
 class NoTeamsError(RuntimeError):
-    pass
+    """
+    Raised when no teams are found.
+    """
 
 
 class MultipleTeamsError(RuntimeError):
+    """
+    Raised when multiple teams are found.
+    """
+
     def __init__(self, teams):
         self.teams = teams
 
 
 class ConfigurationError(RuntimeError):
-    pass
+    """
+    Raised when there is a configuration error.
+    """
 
 
 class CommandError(RuntimeError):
-    pass
+    """
+    Raised when there is a command error.
+    """
 
 
 class DataEntryError(ValueError):
-    pass
+    """
+    Raised when there is a data entry error.
+    """
 
 
 class IneligibleActivity(ValueError):
-    pass
+    """
+    Raised when an activity is ineligible.
+    """
 
 
 class ActivityNotFound(RuntimeError):
-    pass
+    """
+    Raised when an activity is not found.
+    """

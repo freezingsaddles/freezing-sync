@@ -8,10 +8,23 @@ LonLat = namedtuple("LonLat", ["lon", "lat"])
 
 
 def point_wkt(lon, lat):
+    """
+    Generate WKT for a point.
+
+    :param lon: The longitude.
+    :param lat: The latitude.
+    :return: The WKT for the point.
+    """
     return "POINT({lon} {lat})".format(lon=lon, lat=lat)
 
 
 def parse_point_wkt(wkt):
+    """
+    Parse WKT for a point into a LonLat namedtuple.
+
+    :param wkt: The WKT for the point.
+    :return: A LonLat namedtuple with lon and lat.
+    """
     (lon, lat) = _point_rx.match(wkt).group(1).split(" ")
     return LonLat(lon=lon, lat=lat)
 
@@ -31,5 +44,11 @@ def parse_linestring(wkt):
 
 
 def linestring_wkt(points):
+    """
+    Generate WKT for a linestring.
+
+    :param points: A list of (lon, lat) tuples.
+    :return: The WKT for the linestring.
+    """
     wkt_dims = ["{} {}".format(lon, lat) for (lon, lat) in points]
     return "LINESTRING({})".format(", ".join(wkt_dims))
