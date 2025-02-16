@@ -1,6 +1,6 @@
 # Freezing Saddles Sync
 
-This component is part of the [Freezing Saddles](http://freezingsaddles.com) project.  Its purpose is to:
+This component is part of the [Freezing Saddles](http://freezingsaddles.com) project. Its purpose is to:
 
 1. Receive workflow messages published from [freezing-nq](https://github.com/freezingsaddles/freezing-nq) and perform Strava API calls to retrieve activities/streams/etc.
 2. Perform periodic (cron-like) double checks to make sure that we haven't missed any activity updates/deletes.
