@@ -61,7 +61,7 @@ class AthleteSync(BaseSync):
         :rtype: :class:`bafs.model.Athlete`
         """
         session = meta.scoped_session()
-        athlete = session.query(Athlete).get(strava_athlete.id)
+        athlete = session.get(Athlete, strava_athlete.id)
 
         if athlete is None:
             athlete = Athlete()
@@ -171,7 +171,7 @@ class AthleteSync(BaseSync):
             else:
                 club = matches[0]
                 # create the team row if it does not exist
-                team = meta.scoped_session().query(Team).get(club.id)
+                team = meta.scoped_session().get(Team, club.id)
                 if team is None:
                     team = Team()
                 team.id = club.id
