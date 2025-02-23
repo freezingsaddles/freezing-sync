@@ -4,12 +4,13 @@ from typing import Dict, List
 from freezing.model import meta
 from freezing.model.orm import Athlete, Ride, RideTrack
 from geoalchemy2.elements import WKTElement
+from sqlalchemy import and_, or_, update
 from sqlalchemy.orm import joinedload
 from stravalib.exc import ObjectNotFound
 from stravalib.model import Activity, StreamSet
 
 from freezing.sync.config import config
-from freezing.sync.exc import ActivityNotFound
+from freezing.sync.exc import ActivityNotFound, ConfigurationError
 from freezing.sync.utils import wktutils
 from freezing.sync.utils.cache import CachingStreamFetcher
 
@@ -32,8 +33,8 @@ class StreamSync(BaseSync):
 
         q = session.query(Ride).options(joinedload(Ride.athlete))
 
-        # We do not fetch streams for manual rides (since there would be none).
-        q = q.filter(Ride.manual == False)
+        # We do not fetch streams for private rides.  Or manual rides (since there would be none).
+        q = q.filter(and_(Ride.private == False, Ride.manual == False))
 
         if not rewrite:
             q = q.filter(
