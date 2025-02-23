@@ -1,12 +1,14 @@
-import pytest
-import os
 import json
+import os
 from unittest.mock import MagicMock, patch
+
+import pytest
 from stravalib.client import Client
 from stravalib.model import DetailedActivity, Stream
+
 from freezing.sync.utils.cache import (
-    CachingAthleteObjectFetcher,
     CachingActivityFetcher,
+    CachingAthleteObjectFetcher,
     CachingStreamFetcher,
 )
 

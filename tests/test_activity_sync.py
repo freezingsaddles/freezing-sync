@@ -1,9 +1,11 @@
-import pytest
-from unittest.mock import MagicMock, patch
 from datetime import datetime, timedelta
-from stravalib.model import DetailedActivity, ActivityPhotoPrimary
+from unittest.mock import MagicMock, patch
+
+import pytest
+from freezing.model.orm import Athlete, Ride, RideEffort, RidePhoto
+from stravalib.model import ActivityPhotoPrimary, DetailedActivity
+
 from freezing.sync.data.activity import ActivitySync
-from freezing.model.orm import Ride, RideEffort, RidePhoto, Athlete
 from freezing.sync.utils.cache import CachingActivityFetcher
 
 

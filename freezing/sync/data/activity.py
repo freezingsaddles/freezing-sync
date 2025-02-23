@@ -11,7 +11,7 @@ from sqlalchemy import and_, func, text
 from sqlalchemy.orm import joinedload
 from stravalib import unithelper
 from stravalib.exc import AccessUnauthorized, Fault, ObjectNotFound
-from stravalib.model import DetailedActivity, ActivityPhotoPrimary
+from stravalib.model import ActivityPhotoPrimary, DetailedActivity
 
 from freezing.sync.config import config, statsd
 from freezing.sync.exc import (
