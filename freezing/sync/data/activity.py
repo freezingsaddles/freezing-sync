@@ -9,7 +9,7 @@ from freezing.model.orm import Athlete, Ride, RideEffort, RideError, RideGeo, Ri
 from geoalchemy2.elements import WKTElement
 from sqlalchemy import and_, func, text
 from sqlalchemy.orm import joinedload
-from stravalib import unithelper
+from stravalib import unit_helper
 from stravalib.exc import AccessUnauthorized, Fault, ObjectNotFound
 from stravalib.model import ActivityPhotoPrimary, DetailedActivity
 
@@ -53,10 +53,10 @@ class ActivitySync(BaseSync):
         ride.start_date = strava_activity.start_date_local
 
         # We need to round so that "1.0" miles in data is "1.0" miles when we convert back from meters.
-        ride.distance = round(float(unithelper.miles(strava_activity.distance)), 3)
+        ride.distance = round(float(unit_helper.miles(strava_activity.distance)), 3)
 
-        ride.average_speed = float(unithelper.mph(strava_activity.average_speed))
-        ride.maximum_speed = float(unithelper.mph(strava_activity.max_speed))
+        ride.average_speed = float(unit_helper.mph(strava_activity.average_speed))
+        ride.maximum_speed = float(unit_helper.mph(strava_activity.max_speed))
         ride.elapsed_time = strava_activity.elapsed_time.total_seconds()
         ride.moving_time = strava_activity.moving_time.total_seconds()
 
@@ -73,7 +73,7 @@ class ActivitySync(BaseSync):
         ride.trainer = strava_activity.trainer
         ride.manual = strava_activity.manual
         ride.elevation_gain = float(
-            unithelper.feet(strava_activity.total_elevation_gain)
+            unit_helper.feet(strava_activity.total_elevation_gain)
         )
         ride.timezone = str(strava_activity.timezone)
 
@@ -145,7 +145,7 @@ class ActivitySync(BaseSync):
                     hours=6**sync_count
                 )  # 1, 6, 36 hours
 
-        except:
+        except Exception:
             self.logger.exception("Error adding effort for ride: {0}".format(ride))
             raise
 
@@ -242,7 +242,7 @@ class ActivitySync(BaseSync):
         # Start by removing any primary photos for this ride.
         session.execute(
             RidePhoto.__table__.delete().where(
-                and_(RidePhoto.ride_id == strava_activity.id, RidePhoto.primary == True)
+                and_(RidePhoto.ride_id == strava_activity.id, RidePhoto.primary is True)
             )
         )
 
@@ -270,11 +270,11 @@ class ActivitySync(BaseSync):
         q = q.options(joinedload(Ride.athlete))
 
         # TODO: Construct a more complex query to catch photos_fetched=False, track_fetched=False, etc.
-        q = q.filter(Ride.private == False)
+        q = q.filter(Ride.private is False)
 
         if not rewrite:
-            no_detail = Ride.detail_fetched == False
-            resync_efforts = (Ride.efforts_fetched == False) & (
+            no_detail = Ride.detail_fetched is False
+            resync_efforts = (Ride.efforts_fetched is False) & (
                 Ride.resync_date <= datetime.now()
             )
             q = q.filter(no_detail | resync_efforts)
@@ -313,7 +313,7 @@ class ActivitySync(BaseSync):
 
                 session.commit()
 
-            except:
+            except Exception:
                 self.logger.exception(
                     "Error fetching/writing activity detail {}, athlete {}".format(
                         ride.id, ride.athlete
@@ -400,7 +400,7 @@ class ActivitySync(BaseSync):
                     )
                 )
                 raise
-            except:
+            except Exception:
                 self.logger.exception(
                     "Error fetching/writing activity "
                     "detail {}, athlete {}".format(activity_id, athlete_id)
@@ -423,7 +423,7 @@ class ActivitySync(BaseSync):
             self.logger.info("Writing out efforts for {!r}".format(ride))
             self.write_ride_efforts(strava_activity, ride)
             session.flush()
-        except:
+        except Exception:
             self.logger.error(
                 "Error writing efforts for activity {0}, athlete {1}".format(
                     ride.id, ride.athlete
@@ -437,7 +437,7 @@ class ActivitySync(BaseSync):
                 self.write_ride_photo_primary(strava_activity, ride)
             else:
                 self.logger.debug("No photos for {!r}".format(ride))
-        except:
+        except Exception:
             self.logger.error(
                 "Error writing primary photo for activity {}, athlete {}".format(
                     ride.id, ride.athlete
@@ -523,7 +523,7 @@ class ActivitySync(BaseSync):
     # Use local time because that's what is stored in the database.
     def check_db_overlap(
         self,
-        activity: Activity,
+        activity: DetailedActivity,
     ):
         overlaps = (
             meta.scoped_session()
@@ -724,12 +724,12 @@ class ActivitySync(BaseSync):
         else:
             # If ride has been cropped, we re-fetch it.
             if round(ride.distance, 3) != round(
-                float(unithelper.miles(activity.distance)), 3
+                float(unit_helper.miles(activity.distance)), 3
             ):
                 self.logger.info(
                     "Queing resync of details for activity {0!r}: "
                     "distance mismatch ({1} != {2})".format(
-                        activity, ride.distance, unithelper.miles(activity.distance)
+                        activity, ride.distance, unit_helper.miles(activity.distance)
                     )
                 )
                 ride.detail_fetched = False
@@ -766,7 +766,7 @@ class ActivitySync(BaseSync):
         # Quickly filter out only the rides that are not in the database.
         returned_ride_ids = set([r.id for r in api_ride_entries])
         stored_ride_ids = set([r.id for r in db_rides])
-        new_ride_ids = list(returned_ride_ids - stored_ride_ids)
+        # new_ride_ids = list(returned_ride_ids - stored_ride_ids)
         removed_ride_ids = list(stored_ride_ids - returned_ride_ids)
 
         num_rides = len(api_ride_entries)
@@ -781,7 +781,7 @@ class ActivitySync(BaseSync):
                 )
             )
 
-            if rewrite or not strava_activity.id in stored_ride_ids:
+            if rewrite or strava_activity.id not in stored_ride_ids:
                 try:
                     ride = self.write_ride(strava_activity)
                     self.logger.info(
@@ -826,7 +826,7 @@ class ActivitySync(BaseSync):
                         sess.add(ride_error)
 
                         sess.commit()
-                    except:
+                    except Exception:
                         self.logger.exception("Error adding ride-error entry.")
                 else:
                     try:
@@ -841,7 +841,7 @@ class ActivitySync(BaseSync):
                                 )
                             )
                         sess.commit()
-                    except:
+                    except Exception:
                         self.logger.exception("Error maybe-clearing ride-error entry.")
 
                     if ride.detail_fetched is False:
@@ -891,7 +891,7 @@ class ActivitySync(BaseSync):
         """
         with meta.transaction_context() as sess:
             q = sess.query(Athlete)
-            q = q.filter(Athlete.access_token != None)
+            q = q.filter(Athlete.access_token is not None)
             q = q.filter(func.mod(Athlete.id, total_segments) == segment)
             athletes: List[Athlete] = q.all()
             self.logger.info(
@@ -938,7 +938,7 @@ class ActivitySync(BaseSync):
             # We iterate over all of our athletes that have access tokens.  (We can't fetch anything
             # for those that don't.)
             q = sess.query(Athlete)
-            q = q.filter(Athlete.access_token != None)
+            q = q.filter(Athlete.access_token is not None)
 
             if athlete_ids is not None:
                 q = q.filter(Athlete.id.in_(athlete_ids))
@@ -948,7 +948,7 @@ class ActivitySync(BaseSync):
             # without teams.
             # (The way the athlete sync works, athletes will only be configured for a single team
             # that is one of the configured competition teams.)
-            q = q.filter(Athlete.team_id != None)
+            q = q.filter(Athlete.team_id is not None)
 
             for athlete in q.all():
                 assert isinstance(athlete, Athlete)
@@ -967,7 +967,7 @@ class ActivitySync(BaseSync):
                     athlete.access_token = None
                     sess.add(athlete)
                     sess.commit()
-                except:
+                except Exception:
                     self.logger.exception(
                         "Error syncing rides for athlete {}".format(athlete)
                     )
