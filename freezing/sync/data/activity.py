@@ -601,7 +601,10 @@ class ActivitySync(BaseSync):
             a
             for a in activities
             if (
-                (a.type == DetailedActivity.RIDE or a.type == DetailedActivity.EBIKERIDE)
+                (
+                    a.type == DetailedActivity.RIDE
+                    or a.type == DetailedActivity.EBIKERIDE
+                )
                 and not a.manual
                 and not a.trainer
                 and not is_excluded(a)
