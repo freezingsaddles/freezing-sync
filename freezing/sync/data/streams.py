@@ -1,16 +1,16 @@
 import logging
-from typing import Dict, List
+from typing import Dict
 
 from freezing.model import meta
-from freezing.model.orm import Athlete, Ride, RideTrack
+from freezing.model.orm import Ride, RideTrack
 from geoalchemy2.elements import WKTElement
-from sqlalchemy import and_, or_, update
+from sqlalchemy import and_
 from sqlalchemy.orm import joinedload
 from stravalib.exc import ObjectNotFound
-from stravalib.model import Activity, StreamSet
+from stravalib.model import StreamSet
 
 from freezing.sync.config import config
-from freezing.sync.exc import ActivityNotFound, ConfigurationError
+from freezing.sync.exc import ActivityNotFound
 from freezing.sync.utils import wktutils
 from freezing.sync.utils.cache import CachingStreamFetcher
 
@@ -34,11 +34,11 @@ class StreamSync(BaseSync):
         q = session.query(Ride).options(joinedload(Ride.athlete))
 
         # We do not fetch streams for private rides.  Or manual rides (since there would be none).
-        q = q.filter(and_(Ride.private == False, Ride.manual == False))
+        q = q.filter(and_(Ride.private is False, Ride.manual is False))
 
         if not rewrite:
             q = q.filter(
-                Ride.track_fetched == False,
+                Ride.track_fetched is False,
             )
 
         if athlete_id:
@@ -78,7 +78,7 @@ class StreamSync(BaseSync):
                     session.commit()
                 else:
                     self.logger.debug("No streams for {!r} (skipping)".format(ride))
-            except:
+            except Exception:
                 self.logger.exception(
                     "Error fetching/writing activity streams for "
                     "{}, athlete {}".format(ride, ride.athlete),
@@ -120,7 +120,7 @@ class StreamSync(BaseSync):
                 raise ActivityNotFound(
                     "Streams not found for {}, athlete {}".format(ride, ride.athlete)
                 )
-            except:
+            except Exception:
                 self.logger.exception(
                     "Error fetching/writing activity streams for "
                     "{}, athlete {}".format(ride, ride.athlete),
@@ -130,14 +130,14 @@ class StreamSync(BaseSync):
 
     def write_ride_streams(self, streams: StreamSet, ride: Ride):
         """
-        Store GPS track for activity as geometry (linesring) and json types in db.
+        Store GPS track for activity as geometry (linestring) and json types in db.
 
         :param streams: The Strava streams.
         :param ride: The db model object for ride.
         """
         session = meta.scoped_session()
         try:
-            streams_dict: Dict[str, Stream] = {s.type: s for s in streams}
+            streams_dict: Dict[str, StreamSet] = {s.type: s for s in streams}
 
             lonlat_points = [(lon, lat) for (lat, lon) in streams_dict["latlng"].data]
 
