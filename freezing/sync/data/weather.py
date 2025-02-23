@@ -64,7 +64,7 @@ class WeatherSync(BaseSync):
             logger=self.logger,
         )
 
-        rows = meta.engine.execute(q).fetchall()  # @UndefinedVariable
+        rows = sess.execute(q).fetchall()  # @UndefinedVariable
         num_rides = len(rows)
 
         for i, r in enumerate(rows):
@@ -72,8 +72,8 @@ class WeatherSync(BaseSync):
                 logging.info("Limit ({0}) reached".format(limit))
                 break
 
-            ride = sess.query(orm.Ride).get(r["id"])
-            start_geo_wkt = r["start_geo"]
+            ride = sess.get(orm.Ride, r._mapping["id"])
+            start_geo_wkt = r._mapping["start_geo"]
             self.logger.info(
                 "Processing ride: {0} ({1}/{2}) ({3})".format(
                     ride.id, i, num_rides, start_geo_wkt

@@ -59,10 +59,18 @@ class StreamSync(BaseSync):
                 sf = CachingStreamFetcher(
                     cache_basedir=config.STRAVA_ACTIVITY_CACHE_DIR, client=client
                 )
+
+                # Bypass the cache if we appear to be trying to refetch the ride because of change.
+                # This is a different bypass cache behaviour to efforts, but the code is opaque and
+                # effects uncertain. This field is set to false when a ride is resynced because its
+                # distance has changed. So good to avoid cache in that case. However it's also set
+                # to false in other cases maybe probably.
+                bypass_cache = not ride.track_fetched
+
                 streams = sf.fetch(
                     athlete_id=ride.athlete_id,
                     object_id=ride.id,
-                    use_cache=use_cache,
+                    use_cache=use_cache and not bypass_cache,
                     only_cache=only_cache,
                 )
                 if streams:
@@ -88,9 +96,7 @@ class StreamSync(BaseSync):
                 )
             )
 
-            ride = (
-                session.query(Ride).options(joinedload(Ride.athlete)).get(activity_id)
-            )
+            ride = session.get(Ride, activity_id, options=[joinedload(Ride.athlete)])
             if not ride:
                 raise RuntimeError("Cannot load streams before fetching activity.")
 
@@ -135,8 +141,9 @@ class StreamSync(BaseSync):
 
             lonlat_points = [(lon, lat) for (lat, lon) in streams_dict["latlng"].data]
 
-            if not lonlat_points:
-                raise ValueError("No data points in latlng streams.")
+            # mysql does not admit the possibility of one point in a line
+            if len(lonlat_points) < 2:
+                raise ValueError("Insufficient data points in latlng streams.")
 
         except (KeyError, ValueError) as x:
             self.logger.info(
@@ -146,7 +153,7 @@ class StreamSync(BaseSync):
             ride.track_fetched = None
         else:
             # Start by removing any existing segments for the ride.
-            meta.engine.execute(
+            session.execute(
                 RideTrack.__table__.delete().where(RideTrack.ride_id == ride.id)
             )
 

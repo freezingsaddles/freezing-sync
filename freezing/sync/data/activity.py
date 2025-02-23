@@ -7,7 +7,7 @@ import arrow
 from freezing.model import meta
 from freezing.model.orm import Athlete, Ride, RideEffort, RideError, RideGeo, RidePhoto
 from geoalchemy2.elements import WKTElement
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, text
 from sqlalchemy.orm import joinedload
 from stravalib import unithelper
 from stravalib.exc import AccessUnauthorized, Fault, ObjectNotFound
@@ -23,6 +23,9 @@ from freezing.sync.exc import (
 from freezing.sync.utils.cache import CachingActivityFetcher
 
 from . import BaseSync, StravaClientForAthlete
+
+# Amount of activity overlap to permit
+_overlap_ignore = timedelta(minutes=3)
 
 
 class ActivitySync(BaseSync):
@@ -54,8 +57,8 @@ class ActivitySync(BaseSync):
 
         ride.average_speed = float(unithelper.mph(strava_activity.average_speed))
         ride.maximum_speed = float(unithelper.mph(strava_activity.max_speed))
-        ride.elapsed_time = strava_activity.elapsed_time.seconds
-        ride.moving_time = strava_activity.moving_time.seconds
+        ride.elapsed_time = strava_activity.elapsed_time.total_seconds()
+        ride.moving_time = strava_activity.moving_time.total_seconds()
 
         location_parts = []
         if strava_activity.location_city:
@@ -114,7 +117,7 @@ class ActivitySync(BaseSync):
                 effort = RideEffort(
                     id=se.id,
                     ride_id=strava_activity.id,
-                    elapsed_time=se.elapsed_time.seconds,
+                    elapsed_time=se.elapsed_time.total_seconds(),
                     segment_name=se.segment.name,
                     segment_id=se.segment.id,
                 )
@@ -236,8 +239,8 @@ class ActivitySync(BaseSync):
             )
             return
 
-        # Start by removing any priamry photos for this ride.
-        meta.engine.execute(
+        # Start by removing any primary photos for this ride.
+        session.execute(
             RidePhoto.__table__.delete().where(
                 and_(RidePhoto.ride_id == strava_activity.id, RidePhoto.primary == True)
             )
@@ -347,7 +350,7 @@ class ActivitySync(BaseSync):
             )
 
             try:
-                athlete = session.query(Athlete).get(athlete_id)
+                athlete = session.get(Athlete, athlete_id)
                 if not athlete:
                     self.logger.warning(
                         "Athlete {} not found in database, ignoring activity {}".format(
@@ -373,6 +376,10 @@ class ActivitySync(BaseSync):
                         start_date=config.START_DATE,
                         end_date=config.END_DATE,
                         exclude_keywords=config.EXCLUDE_KEYWORDS,
+                    )
+
+                    self.check_db_overlap(
+                        strava_activity,
                     )
 
                     ride = self.write_ride(strava_activity)
@@ -426,7 +433,7 @@ class ActivitySync(BaseSync):
             raise
         try:
             self.logger.info("Writing out primary photo for {!r}".format(ride))
-            if strava_activity.total_photo_count > 0:
+            if strava_activity.total_photo_count > 0 and not ride.private:
                 self.write_ride_photo_primary(strava_activity, ride)
             else:
                 self.logger.debug("No photos for {!r}".format(ride))
@@ -446,7 +453,7 @@ class ActivitySync(BaseSync):
         *,
         start_date: datetime,
         end_date: datetime,
-        exclude_keywords: List[str]
+        exclude_keywords: List[str],
     ):
         """
         Asserts that activity is valid for the competition.
@@ -480,8 +487,8 @@ class ActivitySync(BaseSync):
 
         if activity.type not in (DetailedActivity.RIDE, DetailedActivity.EBIKERIDE):
             raise IneligibleActivity(
-                "Skipping ride {0} ({1!r}) because it is not a RIDE or EBIKERIDE.".format(
-                    activity.id, activity.name
+                "Skipping {0} activity {1} ({2!r}) because it is not a RIDE or EBIKERIDE.".format(
+                    activity.type, activity.id, activity.name
                 )
             )
 
@@ -506,6 +513,49 @@ class ActivitySync(BaseSync):
                         activity.id, activity.name, keyword
                     )
                 )
+
+    # Reject any rides that overlap with existing rides in the database, mostly to skip when
+    # riders use multiple devices and forget to delete the duplicate activities. This will
+    # cause problems for riders who hand-edit activities. In particular, if you slice the
+    # start and end off a ride and join those both into one ride, that will overlap the main
+    # part of the ride and one will be excluded. Just upload three rides instead.
+    # Allow some overlap at the start end, just in case .. things.
+    # Use local time because that's what is stored in the database.
+    def check_db_overlap(
+        self,
+        activity: Activity,
+    ):
+        overlaps = (
+            meta.scoped_session()
+            .execute(
+                text(
+                    """
+                      select R.id
+                      from rides R
+                      where R.athlete_id = :athlete_id
+                      and R.id != :activity_id
+                      and R.start_date <= :end_date
+                      AND DATE_ADD(R.start_date, INTERVAL R.elapsed_time SECOND) >= :start_date
+                      AND R.name not like '%#nooverlap%'
+                    """
+                ).bindparams(
+                    athlete_id=activity.athlete.id,
+                    activity_id=activity.id,
+                    start_date=activity.start_date_local + _overlap_ignore,
+                    end_date=(
+                        activity.start_date_local
+                        + activity.elapsed_time
+                        - _overlap_ignore
+                    ),
+                ),
+            )
+            .fetchall()
+        )
+        if overlaps and "#nooverlap" not in activity.name.lower():
+            ride_ids = ", ".join(str(r[0]) for r in overlaps)
+            raise IneligibleActivity(
+                f"Skipping ride {activity.id} because it overlaps with existing ride {ride_ids}."
+            )
 
     def list_rides(
         self,
@@ -558,7 +608,43 @@ class ActivitySync(BaseSync):
             )
         ]
 
-        return filtered_rides
+        # If this rider has overlapping rides, just select the largest ride. This is because when
+        # we run a full sync the database may be empty so we pull all rides from Strava then filter
+        # and then insert, so filtering can't look at the database.
+        def overlaps_larger(activity, activities):
+            overlaps = [
+                a
+                for a in activities
+                if a.id != activity.id
+                and "#nooverlap" not in a.name.lower()
+                and a.distance > activity.distance
+                and (
+                    a.start_date + _overlap_ignore
+                    <= activity.start_date
+                    + timedelta(
+                        seconds=activity.elapsed_time.seconds
+                    )  # wrong, should be just elapsed_time
+                )
+                and (
+                    a.start_date
+                    + timedelta(
+                        seconds=a.elapsed_time.seconds
+                    )  # wrong, should be just elapsed_time
+                    >= activity.start_date + _overlap_ignore
+                )
+            ]
+            if overlaps and "#nooverlap" not in activity.name.lower():
+                overlap_ids = ", ".join([str(a.id) for a in overlaps])
+                self.logger.info(
+                    f"Excluding ride {activity.id} because of overlap with {overlap_ids}"
+                )
+                return True
+
+        non_overlapping_rides = [
+            a for a in filtered_rides if not overlaps_larger(a, filtered_rides)
+        ]
+
+        return non_overlapping_rides
 
     def write_ride(self, activity: DetailedActivity) -> Ride:
         """
@@ -596,7 +682,7 @@ class ActivitySync(BaseSync):
         assert activity.distance is not None
 
         # Find the model object for that athlete (or create if doesn't exist)
-        athlete = session.query(Athlete).get(athlete_id)
+        athlete = session.get(Athlete, athlete_id)
         if not athlete:
             # The athlete has to exist since otherwise we wouldn't be able to query their rides
             raise ValueError(
@@ -610,12 +696,12 @@ class ActivitySync(BaseSync):
             ride_geo.ride_id = activity.id
             session.merge(ride_geo)
 
-        ride = session.query(Ride).get(activity.id)
+        ride = session.get(Ride, activity.id)
         new_ride = ride is None
-        if ride is None:
-            ride = Ride(activity.id)
 
         if new_ride:
+            ride = Ride(activity.id)
+
             # Set the "workflow flags".  These all default to False in the database.  The value of NULL means
             # that the workflow flag does not apply (e.g. do not bother fetching this)
 
@@ -630,10 +716,12 @@ class ActivitySync(BaseSync):
             else:
                 ride.photos_fetched = None
 
+            session.add(ride)
+
         else:
             # If ride has been cropped, we re-fetch it.
-            if round(ride.distance, 2) != round(
-                float(unithelper.miles(activity.distance)), 2
+            if round(ride.distance, 3) != round(
+                float(unithelper.miles(activity.distance)), 3
             ):
                 self.logger.info(
                     "Queing resync of details for activity {0!r}: "
@@ -650,8 +738,6 @@ class ActivitySync(BaseSync):
 
         if new_ride:
             statsd.histogram("strava.activity.distance", ride.distance)
-
-        session.add(ride)
 
         return ride
 

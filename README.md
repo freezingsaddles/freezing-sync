@@ -1,6 +1,6 @@
 # Freezing Saddles Sync
 
-This component is part of the [Freezing Saddles](http://freezingsaddles.com) project.  Its purpose is to:
+This component is part of the [Freezing Saddles](http://freezingsaddles.com) project. Its purpose is to:
 
 1. Receive workflow messages published from [freezing-nq](https://github.com/freezingsaddles/freezing-nq) and perform Strava API calls to retrieve activities/streams/etc.
 2. Perform periodic (cron-like) double checks to make sure that we haven't missed any activity updates/deletes.
@@ -77,6 +77,6 @@ This project also has _optional_ support for [pre-commit](https://pre-commit.org
 
 This software is a an [Apache 2.0 Licensed](LICENSE), community-driven effort, and as such the contributions are owned by the individual contributors:
 
-- Copyright 2018 Hans Lillelid
+- Copyright 2018 Hans Lellelid
 - Copyright 2020 Richard Bullington-McGuire
 - Copyright 2020 Merlin Hughes
