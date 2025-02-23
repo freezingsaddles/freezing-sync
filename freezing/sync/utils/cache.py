@@ -4,10 +4,9 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
-from freezing.model.orm import Ride
 from stravalib.client import Client
 from stravalib.exc import ObjectNotFound
-from stravalib.model import Activity, IdentifiableEntity, Stream
+from stravalib.model import BoundClientEntity, DetailedActivity, Stream
 
 
 class CachingAthleteObjectFetcher(metaclass=abc.ABCMeta):
@@ -89,7 +88,8 @@ class CachingAthleteObjectFetcher(metaclass=abc.ABCMeta):
         object_id: int,
         use_cache: bool = True,
         only_cache: bool = False
-    ) -> Optional[IdentifiableEntity]:
+        # ):
+    ) -> Optional[BoundClientEntity]:
         pass
 
     def retrieve_object_json(
@@ -147,7 +147,7 @@ class CachingAthleteObjectFetcher(metaclass=abc.ABCMeta):
                     "{} not found (ignoring): {}".format(self.object_type, object_id)
                 )
                 return None
-            except:
+            except Exception:
                 self.logger.error(
                     "Error caching {} {} (ignoring)".format(
                         self.object_type, object_id
@@ -182,7 +182,7 @@ class CachingActivityFetcher(CachingAthleteObjectFetcher):
         object_id: int,
         use_cache: bool = True,
         only_cache: bool = False
-    ) -> Optional[Activity]:
+    ) -> Optional[DetailedActivity]:
         """
         Fetches activity and returns it.
 
@@ -199,7 +199,7 @@ class CachingActivityFetcher(CachingAthleteObjectFetcher):
             only_cache=only_cache,
         )
         if activity_json:
-            return Activity.deserialize(activity_json, bind_client=self.client)
+            return DetailedActivity.deserialize(activity_json, bind_client=self.client)
 
 
 class CachingStreamFetcher(CachingAthleteObjectFetcher):
