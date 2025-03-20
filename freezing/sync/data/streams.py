@@ -2,7 +2,7 @@ import logging
 from typing import Dict, List
 
 from freezing.model import meta
-from freezing.model.orm import Athlete, Ride, RideTrack
+from freezing.model.orm import Athlete, Ride, RideGeo, RideTrack
 from geoalchemy2.elements import WKTElement
 from sqlalchemy.orm import joinedload
 from stravalib.exc import ObjectNotFound
@@ -165,4 +165,17 @@ class StreamSync(BaseSync):
             ride_track.time_stream = streams_dict["time"].data
             session.add(ride_track)
 
-        ride.track_fetched = True
+            # Some rides don't have start and end geo, but do have ride tracks from which we can infer the
+            # start and end from which we can retrieve the weather.
+            if not session.get(RideGeo, ride.id):
+                ride_geo = RideGeo()
+                ride_geo.ride_id = ride.id
+                ride_geo.start_geo = WKTElement(
+                    wktutils.point_wkt(lonlat_points[0][0], lonlat_points[0][1])
+                )
+                ride_geo.end_geo = WKTElement(
+                    wktutils.point_wkt(lonlat_points[-1][0], lonlat_points[-1][1])
+                )
+                session.merge(ride_geo)
+
+            ride.track_fetched = True
