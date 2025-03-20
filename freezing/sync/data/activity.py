@@ -20,6 +20,7 @@ from freezing.sync.exc import (
     DataEntryError,
     IneligibleActivity,
 )
+from freezing.sync.utils import wktutils
 from freezing.sync.utils.cache import CachingActivityFetcher
 
 from . import BaseSync, StravaClientForAthlete
@@ -658,18 +659,14 @@ class ActivitySync(BaseSync):
         session = meta.scoped_session()
         if activity.start_latlng:
             start_geo = WKTElement(
-                "POINT({lon} {lat})".format(
-                    lat=activity.start_latlng.lat, lon=activity.start_latlng.lon
-                )
+                wktutils.point_wkt(activity.start_latlng.lon, activity.start_latlng.lat)
             )
         else:
             start_geo = None
 
         if activity.end_latlng:
             end_geo = WKTElement(
-                "POINT({lon} {lat})".format(
-                    lat=activity.end_latlng.lat, lon=activity.end_latlng.lon
-                )
+                wktutils.point_wkt(activity.end_latlng.lon, activity.end_latlng.lat)
             )
         else:
             end_geo = None
