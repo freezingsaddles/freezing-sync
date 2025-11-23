@@ -82,7 +82,7 @@ class TestCachingActivityFetcher:
         athlete_id = 123
         object_id = 456
         activity_json = {"id": object_id, "name": "Test Activity"}
-        activity = DetailedActivity.deserialize(activity_json, bind_client=client)
+        activity = DetailedActivity.model_validate(activity_json)
         mock_get_activity.return_value = activity
 
         # Test fetch with cache miss
@@ -108,9 +108,7 @@ class TestCachingStreamFetcher:
         athlete_id = 123
         object_id = 456
         streams_json = [{"type": "latlng", "data": [[1.0, 2.0], [3.0, 4.0]]}]
-        streams = [
-            Stream.deserialize(stream, bind_client=client) for stream in streams_json
-        ]
+        streams = [Stream.model_validate(stream) for stream in streams_json]
         mock_get_activity_streams.return_value = streams
 
         # Test fetch with cache miss

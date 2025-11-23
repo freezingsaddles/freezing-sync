@@ -105,7 +105,7 @@ class ActivityUpdateSubscriber:
                         )  # We put it back with a delay
                     else:
                         self.client.delete(job)
-                        # FIXME: Work around stravalib 1.2's incomplete understanding of Strava Rate limits by just sleeping for a bit between requests.
+                        # Throttle requests to avoid hitting rate limits
                         sleep(self._THROTTLE_DELAY)
 
         except (KeyboardInterrupt, SystemExit):

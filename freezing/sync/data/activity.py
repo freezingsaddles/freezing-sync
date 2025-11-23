@@ -729,7 +729,9 @@ class ActivitySync(BaseSync):
                 self.logger.info(
                     "Queing resync of details for activity {0!r}: "
                     "distance mismatch ({1} != {2})".format(
-                        activity, ride.distance, unit_helper.miles(activity.distance)
+                        activity,
+                        ride.distance,
+                        float(unit_helper.miles(activity.distance)),
                     )
                 )
                 ride.detail_fetched = False

@@ -199,7 +199,7 @@ class CachingActivityFetcher(CachingAthleteObjectFetcher):
             only_cache=only_cache,
         )
         if activity_json:
-            return DetailedActivity.deserialize(activity_json, bind_client=self.client)
+            return DetailedActivity.model_validate(activity_json)
 
 
 class CachingStreamFetcher(CachingAthleteObjectFetcher):
@@ -241,6 +241,5 @@ class CachingStreamFetcher(CachingAthleteObjectFetcher):
 
         if streams_json:
             return [
-                Stream.deserialize(stream_struct, bind_client=self.client)
-                for stream_struct in streams_json
+                Stream.model_validate(stream_struct) for stream_struct in streams_json
             ]
