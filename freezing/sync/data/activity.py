@@ -53,10 +53,28 @@ class ActivitySync(BaseSync):
         ride.start_date = strava_activity.start_date_local
 
         # We need to round so that "1.0" miles in data is "1.0" miles when we convert back from meters.
-        ride.distance = round(float(unit_helper.miles(strava_activity.distance)), 3)
+        # In Stravalib 2.x, distance is a Distance object with a .quantity() method
+        # Convert to quantity (with meters unit) before passing to unit_helper
+        distance_quantity = (
+            strava_activity.distance.quantity()
+            if hasattr(strava_activity.distance, "quantity")
+            else unit_helper.meters(strava_activity.distance)
+        )
+        ride.distance = round(unit_helper.miles(distance_quantity).magnitude, 3)
 
-        ride.average_speed = float(unit_helper.mph(strava_activity.average_speed))
-        ride.maximum_speed = float(unit_helper.mph(strava_activity.max_speed))
+        avg_speed_quantity = (
+            strava_activity.average_speed.quantity()
+            if hasattr(strava_activity.average_speed, "quantity")
+            else unit_helper.meters_per_second(strava_activity.average_speed)
+        )
+        ride.average_speed = unit_helper.mph(avg_speed_quantity).magnitude
+
+        max_speed_quantity = (
+            strava_activity.max_speed.quantity()
+            if hasattr(strava_activity.max_speed, "quantity")
+            else unit_helper.meters_per_second(strava_activity.max_speed)
+        )
+        ride.maximum_speed = unit_helper.mph(max_speed_quantity).magnitude
         ride.elapsed_time = strava_activity.elapsed_time.total_seconds()
         ride.moving_time = strava_activity.moving_time.total_seconds()
 
@@ -72,9 +90,13 @@ class ActivitySync(BaseSync):
         ride.commute = strava_activity.commute
         ride.trainer = strava_activity.trainer
         ride.manual = strava_activity.manual
-        ride.elevation_gain = float(
-            unit_helper.feet(strava_activity.total_elevation_gain)
+
+        elev_gain_quantity = (
+            strava_activity.total_elevation_gain.quantity()
+            if hasattr(strava_activity.total_elevation_gain, "quantity")
+            else unit_helper.meters(strava_activity.total_elevation_gain)
         )
+        ride.elevation_gain = unit_helper.feet(elev_gain_quantity).magnitude
         ride.timezone = str(strava_activity.timezone)
 
         # # Short-circuit things that might result in more obscure db errors later.
