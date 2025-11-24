@@ -27,4 +27,4 @@ jobs:
 
       - name: Run tests
         run: |
-          APP_SETTINGS=example.cfg pytest
+          APP_SETTINGS=example.cfg pytest -m "not live"

@@ -90,3 +90,6 @@ pythonpath = "."
 addopts = [
     "--import-mode=importlib",
 ]
+markers = [
+    "live: marks tests that make real network calls to Strava API (deselect with '-m \"not live\"')",
+]
