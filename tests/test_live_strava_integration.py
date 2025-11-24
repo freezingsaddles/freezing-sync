@@ -17,7 +17,7 @@ import os
 from unittest.mock import patch
 
 import pytest
-from freezing.model import meta, init_model
+from freezing.model import init_model, meta
 from freezing.model.orm import Athlete
 from stravalib import unit_helper
 from stravalib.client import Client
