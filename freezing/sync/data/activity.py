@@ -11,7 +11,7 @@ from sqlalchemy import and_, func, text
 from sqlalchemy.orm import joinedload
 from stravalib import unit_helper
 from stravalib.exc import AccessUnauthorized, Fault, ObjectNotFound
-from stravalib.model import ActivityPhotoPrimary, DetailedActivity
+from stravalib.model import ActivityPhotoPrimary, DetailedActivity, SegmentEffort
 
 from freezing.sync.config import config, statsd
 from freezing.sync.exc import (
@@ -49,7 +49,6 @@ class ActivitySync(BaseSync):
             )
             ride.photos_fetched = False
 
-        ride.private = bool(strava_activity.private)
         ride.name = strava_activity.name
         ride.start_date = strava_activity.start_date_local
 
@@ -87,6 +86,9 @@ class ActivitySync(BaseSync):
         location_str = ", ".join(location_parts)
 
         ride.location = location_str
+
+        ride.private = bool(strava_activity.private)
+        ride.visibility = strava_activity.visibility
 
         ride.commute = strava_activity.commute
         ride.trainer = strava_activity.trainer
@@ -136,13 +138,28 @@ class ActivitySync(BaseSync):
             )
 
             # Then add them back in
-            for se in strava_activity.segment_efforts:
+            for se in strava_activity.segment_efforts or []:
+                pr = next(
+                    (ach.rank for ach in se.achievements or [] if ach.type == "pr"),
+                    None,
+                )
+                legend = next(
+                    (
+                        ach.rank == 1
+                        for ach in se.achievements or []
+                        if ach.type == "segment_effort_count_leader"
+                    ),
+                    False,
+                )
+
                 effort = RideEffort(
                     id=se.id,
                     ride_id=strava_activity.id,
                     elapsed_time=se.elapsed_time.total_seconds(),
                     segment_name=se.segment.name,
                     segment_id=se.segment.id,
+                    personal_record=pr,
+                    local_legend=legend,
                 )
 
                 self.logger.debug(
