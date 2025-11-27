@@ -89,11 +89,13 @@ def test_write_ride_efforts(activity_sync, detailed_activity, ride):
             id=1,
             elapsed_time=timedelta(seconds=300),
             segment=SimpleNamespace(name="Segment 1", id=1),
+            achievements=[],
         ),
         SimpleNamespace(
             id=2,
             elapsed_time=timedelta(seconds=600),
             segment=SimpleNamespace(name="Segment 2", id=2),
+            achievements=[],
         ),
     ]
     with patch("freezing.sync.data.activity.meta.scoped_session", return_value=session):
