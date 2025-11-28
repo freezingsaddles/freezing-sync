@@ -32,6 +32,7 @@ def detailed_activity():
     activity.start_date_local = datetime.now()
     activity.distance = Distance(1000.0)
     activity.average_speed = Velocity(10.0)
+    activity.average_temp = 99
     activity.max_speed = Velocity(20.0)
     activity.elapsed_time = timedelta(hours=1)
     activity.moving_time = timedelta(hours=1)
@@ -71,6 +72,7 @@ def test_update_ride_basic(activity_sync, detailed_activity, ride):
     assert ride.distance == pytest.approx(0.621, rel=1e-3)  # 1000m to miles
     assert ride.average_speed == pytest.approx(22.369, rel=1e-3)  # 10 m/s to mph
     assert ride.maximum_speed == pytest.approx(44.738, rel=1e-3)  # 20 m/s to mph
+    assert ride.average_temp == 210  # 99 C to F
     assert ride.elapsed_time == detailed_activity.elapsed_time.total_seconds()
     assert ride.moving_time == detailed_activity.moving_time.total_seconds()
     assert ride.location == "Test City, Test State"

@@ -78,6 +78,13 @@ class ActivitySync(BaseSync):
         ride.elapsed_time = strava_activity.elapsed_time.total_seconds()
         ride.moving_time = strava_activity.moving_time.total_seconds()
 
+        # For now this is just a guess. is it really integer Celsius?
+        ride.average_temp = (
+            int(unit_helper.c2f(strava_activity.average_temp))
+            if strava_activity.average_temp
+            else None
+        )
+
         location_parts = []
         if strava_activity.location_city:
             location_parts.append(strava_activity.location_city)
