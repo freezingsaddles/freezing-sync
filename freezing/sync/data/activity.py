@@ -34,6 +34,29 @@ class ActivitySync(BaseSync):
     name = "sync-activity"
     description = "Sync activities."
 
+    def _seconds_from_duration(self, value):
+        """
+        Normalize a duration-like value to seconds.
+
+        Accepts stravalib Duration (with .timedelta()), builtin datetime.timedelta,
+        or any object with .total_seconds(). Falls back to int(value) if applicable.
+        """
+        if value is None:
+            return None
+        # stravalib Duration
+        if hasattr(value, "timedelta") and callable(getattr(value, "timedelta")):
+            return int(value.timedelta().total_seconds())
+        # builtin timedelta or any object exposing total_seconds()
+        if hasattr(value, "total_seconds") and callable(
+            getattr(value, "total_seconds")
+        ):
+            return int(value.total_seconds())
+        # numeric seconds
+        try:
+            return int(value)
+        except Exception:
+            return None
+
     # sometimes this is a SummaryActivity, sometimes it's a DetailedActivity 8(
     def update_ride_basic(self, strava_activity: SummaryActivity, ride: Ride):
         """
@@ -77,10 +100,8 @@ class ActivitySync(BaseSync):
             else unit_helper.meters_per_second(strava_activity.max_speed)
         )
         ride.maximum_speed = unit_helper.mph(max_speed_quantity).magnitude
-        ride.elapsed_time = int(
-            strava_activity.elapsed_time.timedelta().total_seconds()
-        )
-        ride.moving_time = int(strava_activity.moving_time.timedelta().total_seconds())
+        ride.elapsed_time = self._seconds_from_duration(strava_activity.elapsed_time)
+        ride.moving_time = self._seconds_from_duration(strava_activity.moving_time)
 
         # is it a detailed activity....
         if hasattr(strava_activity, "average_temp"):
@@ -167,7 +188,7 @@ class ActivitySync(BaseSync):
                 effort = RideEffort(
                     id=se.id,
                     ride_id=strava_activity.id,
-                    elapsed_time=se.elapsed_time.timedelta().total_seconds(),
+                    elapsed_time=self._seconds_from_duration(se.elapsed_time),
                     segment_name=se.segment.name,
                     segment_id=se.segment.id,
                     personal_record=pr,
