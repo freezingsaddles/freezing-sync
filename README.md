@@ -59,6 +59,14 @@ There are a few additional settings you may need (i.e. not to be default) when n
 - `STRAVA_ACTIVITY_CACHE_DIR`: Where to put cached activities (absolute path is a good idea).
 - `VISUAL_CROSSING_CACHE_DIR`: Similarly, where should weather files be stored?
 
+### Running Unit Tests
+
+To run the unit tests, you can use `pytest`. Make sure you have all the dependencies installed, including the ones in `requirements-test.txt`. You can run the tests with the following command:
+
+```bash
+pytest
+```
+
 ### Coding standards
 
 The `freezing-sync` code is intended to be [PEP-8](https://www.python.org/dev/peps/pep-0008/) compliant. Code formatting is done with [black](https://black.readthedocs.io/en/stable/), [isort](https://pycqa.github.io/isort/) and [djlint](https://www.djlint.com/) and can be linted with [flake8](http://flake8.pycqa.org/en/latest/). See the [pyproject.toml](pyproject.toml) file and install the dev dependencies to get these tools.
