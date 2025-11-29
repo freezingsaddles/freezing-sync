@@ -133,7 +133,7 @@ class ActivitySync(BaseSync):
             else unit_helper.meters(strava_activity.total_elevation_gain)
         )
         ride.elevation_gain = int(unit_helper.feet(elev_gain_quantity).magnitude)
-        ride.timezone = str(strava_activity.timezone)
+        ride.timezone = strava_activity.timezone.timezone().zone
 
         # # Short-circuit things that might result in more obscure db errors later.
         if ride.elapsed_time is None:
