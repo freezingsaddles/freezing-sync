@@ -42,7 +42,15 @@ def detailed_activity():
     activity.trainer = False
     activity.visibility = "everyone"
     activity.total_elevation_gain = Distance(100.0)
-    activity.timezone = "UTC"
+
+    # Provide a timezone-like object matching production access pattern
+    class _TZ:
+        def timezone(self):
+            import pytz
+
+            return pytz.timezone("UTC")
+
+    activity.timezone = _TZ()
     # Photos container with primary attribute
     activity.photos = SimpleNamespace(primary=None)
     activity.segment_efforts = []
@@ -79,7 +87,7 @@ def test_update_ride_basic(activity_sync, detailed_activity, ride):
     assert ride.trainer == detailed_activity.trainer
     assert ride.visibility == detailed_activity.visibility
     assert ride.elevation_gain == pytest.approx(328.084, rel=1e-3)  # 100m to feet
-    assert ride.timezone == detailed_activity.timezone
+    assert ride.timezone == detailed_activity.timezone.timezone().zone
 
 
 def test_write_ride_efforts(activity_sync, detailed_activity, ride):
