@@ -347,7 +347,7 @@ class ActivitySync(BaseSync):
 
         if not rewrite:
             no_detail = Ride.detail_fetched == False
-            resync_efforts = (Ride.efforts_fetched == False) and (
+            resync_efforts = (Ride.efforts_fetched == False) & (
                 Ride.resync_date <= datetime.now()
             )
             q = q.filter(no_detail | resync_efforts)
