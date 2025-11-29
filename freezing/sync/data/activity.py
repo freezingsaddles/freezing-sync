@@ -77,7 +77,9 @@ class ActivitySync(BaseSync):
             else unit_helper.meters_per_second(strava_activity.max_speed)
         )
         ride.maximum_speed = unit_helper.mph(max_speed_quantity).magnitude
-        ride.elapsed_time = int(strava_activity.elapsed_time.timedelta().total_seconds())
+        ride.elapsed_time = int(
+            strava_activity.elapsed_time.timedelta().total_seconds()
+        )
         ride.moving_time = int(strava_activity.moving_time.timedelta().total_seconds())
 
         # is it a detailed activity....
@@ -535,7 +537,7 @@ class ActivitySync(BaseSync):
                 )
             )
 
-        if activity.type not in ('Ride', 'EBikeRide'):
+        if activity.type not in ("Ride", "EBikeRide"):
             raise IneligibleActivity(
                 "Skipping {0} activity {1} ({2!r}) because it is not a RIDE or EBIKERIDE.".format(
                     activity.type, activity.id, activity.name
@@ -651,10 +653,7 @@ class ActivitySync(BaseSync):
             a
             for a in activities
             if (
-                (
-                    a.type == 'Ride'
-                    or a.type == 'EBikeRide'
-                )
+                (a.type == "Ride" or a.type == "EBikeRide")
                 and not a.manual
                 and not a.trainer
                 and not is_excluded(a)
@@ -664,7 +663,9 @@ class ActivitySync(BaseSync):
         # If this rider has overlapping rides, just select the largest ride. This is because when
         # we run a full sync the database may be empty so we pull all rides from Strava then filter
         # and then insert, so filtering can't look at the database.
-        def overlaps_larger(activity: SummaryActivity, activities: List[SummaryActivity]):
+        def overlaps_larger(
+            activity: SummaryActivity, activities: List[SummaryActivity]
+        ):
             overlaps = [
                 a
                 for a in activities
@@ -673,12 +674,10 @@ class ActivitySync(BaseSync):
                 and a.distance > activity.distance
                 and (
                     a.start_date + _overlap_ignore
-                    <= activity.start_date
-                    + activity.elapsed_time.timedelta()
+                    <= activity.start_date + activity.elapsed_time.timedelta()
                 )
                 and (
-                    a.start_date
-                    + a.elapsed_time.timedelta()
+                    a.start_date + a.elapsed_time.timedelta()
                     >= activity.start_date + _overlap_ignore
                 )
             ]
