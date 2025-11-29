@@ -52,7 +52,7 @@ class AthleteSync(BaseSync):
                     )
 
     def register_athlete(
-        self, strava_athlete: sm.Athlete, access_token: str
+        self, strava_athlete: sm.DetailedAthlete, access_token: str
     ) -> Athlete:
         """
         Ensure specified athlete is added to database, returns athlete model.
@@ -109,7 +109,7 @@ class AthleteSync(BaseSync):
         return athlete
 
     def register_athlete_team(
-        self, strava_athlete: sm.Athlete, athlete_model: Athlete
+        self, strava_athlete: sm.DetailedAthlete, athlete_model: Athlete
     ) -> Team:
         """
         Updates db with configured team that matches the athlete's teams.
