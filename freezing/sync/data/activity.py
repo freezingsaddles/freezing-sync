@@ -784,15 +784,20 @@ class ActivitySync(BaseSync):
 
         else:
             # If ride has been cropped, we re-fetch it.
-            if round(ride.distance, 3) != round(
-                float(unit_helper.miles(activity.distance)), 3
-            ):
+            distance_quantity = (
+                activity.distance.quantity()
+                if hasattr(activity.distance, "quantity")
+                else unit_helper.meters(activity.distance)
+            )
+            distance_miles = unit_helper.miles(distance_quantity).magnitude
+
+            if round(ride.distance, 3) != round(distance_miles, 3):
                 self.logger.info(
                     "Queing resync of details for activity {0!r}: "
                     "distance mismatch ({1} != {2})".format(
                         activity,
                         ride.distance,
-                        float(unit_helper.miles(activity.distance)),
+                        distance_miles,
                     )
                 )
                 ride.detail_fetched = False
