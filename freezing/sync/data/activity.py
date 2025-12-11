@@ -104,6 +104,12 @@ class ActivitySync(BaseSync):
         ride.moving_time = self._seconds_from_duration(strava_activity.moving_time)
 
         # is it a detailed activity....
+        if hasattr(strava_activity, "description"):
+            ride.description = (
+                strava_activity.description[:1024]
+                if strava_activity.description
+                else None
+            )
         if hasattr(strava_activity, "average_temp"):
             # It's Celsius as an integer... Such accuracy.
             ride.average_temp = (
