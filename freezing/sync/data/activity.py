@@ -106,7 +106,7 @@ class ActivitySync(BaseSync):
         # is it a detailed activity....
         if hasattr(strava_activity, "description"):
             ride.description = (
-                strava_activity.description[:1024]
+                strava_activity.description[-1024:]
                 if strava_activity.description
                 else None
             )
