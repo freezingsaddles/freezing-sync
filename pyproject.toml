@@ -15,7 +15,7 @@ dependencies = [
     "APScheduler==3.11.1",
     "GeoAlchemy2==0.17.1",
     "PyMySQL==1.1.2",
-    "SQLAlchemy==2.0.44",
+    "SQLAlchemy==2.0.45",
     "colorlog==6.10.1",
     "datadog==0.52.1",
     "envparse==0.2.0",
