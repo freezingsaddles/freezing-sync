@@ -428,49 +428,52 @@ class ActivitySync(BaseSync):
                 )
             )
 
+            athlete = session.get(Athlete, athlete_id)
+            if not athlete:
+                self.logger.warning(
+                    "Athlete {} not found in database, ignoring activity {}".format(
+                        athlete_id, activity_id
+                    )
+                )
+                return
+
             try:
-                athlete = session.get(Athlete, athlete_id)
-                if not athlete:
-                    self.logger.warning(
-                        "Athlete {} not found in database, ignoring activity {}".format(
-                            athlete_id, activity_id
-                        )
-                    )
-                    return  # Makes the else a little unnecessary, but reads easier.
-                else:
-                    client = StravaClientForAthlete(athlete)
+                client = StravaClientForAthlete(athlete)
 
-                    af = CachingActivityFetcher(
-                        cache_basedir=config.STRAVA_ACTIVITY_CACHE_DIR, client=client
-                    )
+                af = CachingActivityFetcher(
+                    cache_basedir=config.STRAVA_ACTIVITY_CACHE_DIR, client=client
+                )
 
-                    strava_activity = af.fetch(
-                        athlete_id=athlete_id,
-                        object_id=activity_id,
-                        use_cache=use_cache,
-                    )
+                strava_activity = af.fetch(
+                    athlete_id=athlete_id,
+                    object_id=activity_id,
+                    use_cache=use_cache,
+                )
 
-                    self.check_activity(
-                        strava_activity,
-                        start_date=config.START_DATE,
-                        end_date=config.END_DATE,
-                        exclude_keywords=config.EXCLUDE_KEYWORDS,
-                    )
+                self.check_activity(
+                    strava_activity,
+                    start_date=config.START_DATE,
+                    end_date=config.END_DATE,
+                    exclude_keywords=config.EXCLUDE_KEYWORDS,
+                )
 
-                    self.check_db_overlap(
-                        strava_activity,
-                    )
+                self.check_db_overlap(
+                    strava_activity,
+                )
 
-                    ride = self.write_ride(strava_activity)
-                    self.update_ride_complete(
-                        strava_activity=strava_activity, ride=ride
-                    )
+                ride = self.write_ride(strava_activity)
+                self.update_ride_complete(strava_activity=strava_activity, ride=ride)
             except ObjectNotFound:
                 raise ActivityNotFound(
                     "Activity {} not found, ignoring.".format(activity_id)
                 )
             except IneligibleActivity:
                 raise
+            except AccessUnauthorized:
+                self.logger.error(
+                    "Invalid authorization token for {} (removing)".format(athlete)
+                )
+                athlete.access_token = None
             except Fault as x:
                 self.logger.exception(
                     "Stravalib fault: "
@@ -989,6 +992,9 @@ class ActivitySync(BaseSync):
 
             if end_date is None:
                 end_date = config.END_DATE
+
+            if start_date > datetime.now():
+                return
 
             self.logger.debug(
                 "Fetching rides newer than {} and older than {}".format(
