@@ -16,6 +16,12 @@ class SyncActivityDetails(BaseCommand):
         )
 
         parser.add_argument(
+            "--activity-id",
+            type=int,
+            help="Just sync rides for a specific activity.",
+        )
+
+        parser.add_argument(
             "--max-records",
             type=int,
             help="Limit number of rides to return.",
@@ -49,6 +55,7 @@ class SyncActivityDetails(BaseCommand):
         fetcher = ActivitySync(logger=self.logger)
         fetcher.sync_rides_detail(
             athlete_id=args.athlete_id,
+            activity_id=args.activity_id,
             rewrite=args.rewrite,
             use_cache=args.use_cache,
             only_cache=args.only_cache,

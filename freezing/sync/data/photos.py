@@ -1,33 +1,45 @@
 from freezing.model import meta, orm
-
-# from freezing.web.utils.insta import configured_instagram_client, photo_cache_path
-from freezing.model.orm import RidePhoto
-from instagram import InstagramAPIError
+from freezing.model.orm import Ride, RidePhoto
 from sqlalchemy import and_
+from stravalib.client import BatchedResultsIterator
+from stravalib.model import ActivityPhoto
 
 from freezing.sync.data import StravaClientForAthlete
 
 from . import BaseSync
+
+BigSize = 1000
+SmallSize = 200
 
 
 class PhotoSync(BaseSync):
     name = "sync-photos"
     description = "Sync (non-primary) ride photos."
 
-    def sync_photos(self):
+    def sync_photos(
+        self,
+        athlete_id: int | None = None,
+        activity_id: int | None = None,
+        force: bool = False,
+    ):
         with meta.transaction_context() as sess:
-            q = sess.query(orm.Ride)
-            q = q.filter_by(photos_fetched=False, private=False)
+            q = sess.query(Ride)
+            q = q.filter_by(private=False)
+            if not force:
+                q = q.filter_by(photos_fetched=False)
+            if athlete_id:
+                q = q.filter_by(athlete_id=athlete_id)
+            if activity_id:
+                q = q.filter_by(id=activity_id)
 
             for ride in q:
                 self.logger.info("Writing out photos for {0!r}".format(ride))
                 try:
                     client = StravaClientForAthlete(ride.athlete)
-                    activity_photos = client.get_activity_photos(
-                        ride.id, only_instagram=True
-                    )
-                    """ :type: list[stravalib.orm.ActivityPhoto] """
-                    self.write_ride_photos_nonprimary(activity_photos, ride)
+                    big_photos = client.get_activity_photos(ride.id, size=BigSize)
+                    self.write_ride_photos_nonprimary(big_photos, ride)
+                    small_photos = client.get_activity_photos(ride.id, size=SmallSize)
+                    self.write_ride_photos_nonprimary(small_photos, ride)
                 except:
                     self.logger.exception(
                         "Error fetching/writing "
@@ -36,9 +48,11 @@ class PhotoSync(BaseSync):
                         exc_info=True,
                     )
 
-    def write_ride_photos_nonprimary(self, activity_photos, ride):
+    def write_ride_photos_nonprimary(
+        self, activity_photos: BatchedResultsIterator[ActivityPhoto], ride: Ride
+    ):
         """
-        Writes out non-primary photos (currently only instagram) associated with a ride to the database.
+        Writes out/updates all photos associated with a ride to the database.
 
         :param activity_photos: Photos for an activity.
         :type activity_photos: list[stravalib.orm.ActivityPhoto]
@@ -46,83 +60,45 @@ class PhotoSync(BaseSync):
         :param ride: The db model object for ride.
         :type ride: bafs.orm.Ride
         """
-        # [{u'activity_id': 414980300,
-        #   u'activity_name': u'Pimmit Run CX',
-        #   u'caption': u'Pimmit Run cx',
-        #   u'created_at': u'2015-10-17T20:51:02Z',
-        #   u'created_at_local': u'2015-10-17T16:51:02Z',
-        #   u'id': 106409096,
-        #   u'ref': u'https://instagram.com/p/88qaqZvrBI/',
-        #   u'resource_state': 2,
-        #   u'sizes': {u'0': [150, 150]},
-        #   u'source': 2,
-        #   u'type': u'InstagramPhoto',
-        #   u'uid': u'1097938959360503880_297644011',
-        #   u'unique_id': None,
-        #   u'uploaded_at': u'2015-10-17T17:55:45Z',
-        #   u'urls': {u'0': u'https://instagram.com/p/88qaqZvrBI/media?size=t'}}]
 
-        raise NotImplementedError("This needs to be sorted out.")
-
-        meta.engine.execute(
-            RidePhoto.__table__.delete().where(
-                and_(RidePhoto.ride_id == ride.id, RidePhoto.primary == False)
-            )
-        )
-
-        # insta_client = insta.configured_instagram_client()
+        photos = meta.scoped_session().query(RidePhoto).filter_by(ride_id=ride.id)
+        existing_photos = {photo.id: photo for photo in photos}
 
         for activity_photo in activity_photos:
-            # If it's already in the db, then skip it.
-            existing = meta.scoped_session().query(RidePhoto).get(activity_photo.uid)
-            if existing:
-                self.logger.info(
-                    "Skipping photo {} because it's already in database: {}".format(
-                        activity_photo, existing
+            if not activity_photo.urls:
+                self.logger.warning(
+                    "Photo {} present, but has no URLs (skipping)".format(
+                        activity_photo
                     )
                 )
                 continue
 
-            try:
-                media = insta_client.media(activity_photo.uid)
-
+            # If it's already in the db, then skip it.
+            photo = existing_photos.get(activity_photo.unique_id)
+            if photo:
+                del existing_photos[activity_photo.unique_id]
+            else:
+                self.logger.info(
+                    "Adding photo {}: {}".format(
+                        activity_photo.uid, activity_photo.caption
+                    )
+                )
                 photo = RidePhoto(
-                    id=activity_photo.uid,
+                    id=activity_photo.unique_id,
                     ride_id=ride.id,
                     ref=activity_photo.ref,
-                    caption=activity_photo.caption,
+                    primary=False,
                 )
-
-                photo.img_l = media.get_standard_resolution_url()
-                photo.img_t = media.get_thumbnail_url()
-
                 meta.scoped_session().add(photo)
 
-                self.logger.debug(
-                    "Writing (non-primary) ride photo: {p_id}: {photo!r}".format(
-                        p_id=photo.id, photo=photo
-                    )
-                )
+            photo.img_l = activity_photo.urls.get(str(BigSize)) or photo.img_l
+            photo.img_t = activity_photo.urls.get(str(SmallSize)) or photo.img_t
+            photo.caption = activity_photo.caption
 
-                meta.scoped_session().flush()
-            except (InstagramAPIError, InstagramClientError) as e:
-                if e.status_code == 400:
-                    self.logger.warning(
-                        "Skipping photo {0} for ride {1}; user is set to private".format(
-                            activity_photo, ride
-                        )
-                    )
-                elif e.status_code == 404:
-                    self.logger.warning(
-                        "Skipping photo {0} for ride {1}; not found".format(
-                            activity_photo, ride
-                        )
-                    )
-                else:
-                    self.logger.exception(
-                        "Error fetching instagram photo {0} (skipping)".format(
-                            activity_photo
-                        )
-                    )
+            meta.scoped_session().flush()
+
+        for deleted_photo in existing_photos.values():
+            self.logger.info("Deleting deleted photo {}".format(deleted_photo))
+            meta.scoped_session().delete(deleted_photo)
 
         ride.photos_fetched = True
