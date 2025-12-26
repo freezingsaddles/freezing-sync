@@ -755,7 +755,8 @@ class ActivitySync(BaseSync):
 
             ride.track_fetched = False
 
-            if activity.total_photo_count > 1:
+            # update_ride_basic will do this anyway
+            if activity.total_photo_count > 0:
                 ride.photos_fetched = False
 
             session.add(ride)
