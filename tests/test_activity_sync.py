@@ -71,23 +71,25 @@ def ride():
 
 
 def test_update_ride_basic(activity_sync, detailed_activity, ride):
-    activity_sync.update_ride_basic(detailed_activity, ride)
-    assert ride.name == detailed_activity.name
-    assert ride.private == detailed_activity.private
-    assert ride.start_date == detailed_activity.start_date_local
-    # Use approximate comparisons for float values from unit conversions
-    assert ride.distance == pytest.approx(0.621, rel=1e-3)  # 1000m to miles
-    assert ride.average_speed == pytest.approx(22.369, rel=1e-3)  # 10 m/s to mph
-    assert ride.maximum_speed == pytest.approx(44.738, rel=1e-3)  # 20 m/s to mph
-    assert ride.average_temp == 210  # 99 C to F
-    assert ride.elapsed_time == detailed_activity.elapsed_time.total_seconds()
-    assert ride.moving_time == detailed_activity.moving_time.total_seconds()
-    assert ride.location == "Test City, Test State"
-    assert ride.commute == detailed_activity.commute
-    assert ride.trainer == detailed_activity.trainer
-    assert ride.visibility == detailed_activity.visibility
-    assert ride.elevation_gain == pytest.approx(328.084, rel=1e-3)  # 100m to feet
-    assert ride.timezone == detailed_activity.timezone.timezone().zone
+    session = MagicMock()
+    with patch("freezing.sync.data.activity.meta.scoped_session", return_value=session):
+        activity_sync.update_ride_basic(detailed_activity, ride)
+        assert ride.name == detailed_activity.name
+        assert ride.private == detailed_activity.private
+        assert ride.start_date == detailed_activity.start_date_local
+        # Use approximate comparisons for float values from unit conversions
+        assert ride.distance == pytest.approx(0.621, rel=1e-3)  # 1000m to miles
+        assert ride.average_speed == pytest.approx(22.369, rel=1e-3)  # 10 m/s to mph
+        assert ride.maximum_speed == pytest.approx(44.738, rel=1e-3)  # 20 m/s to mph
+        assert ride.average_temp == 210  # 99 C to F
+        assert ride.elapsed_time == detailed_activity.elapsed_time.total_seconds()
+        assert ride.moving_time == detailed_activity.moving_time.total_seconds()
+        assert ride.location == "Test City, Test State"
+        assert ride.commute == detailed_activity.commute
+        assert ride.trainer == detailed_activity.trainer
+        assert ride.visibility == detailed_activity.visibility
+        assert ride.elevation_gain == pytest.approx(328.084, rel=1e-3)  # 100m to feet
+        assert ride.timezone == detailed_activity.timezone.timezone().zone
 
 
 def test_write_ride_efforts(activity_sync, detailed_activity, ride):
@@ -125,6 +127,7 @@ def test_write_ride_photo_primary(activity_sync, detailed_activity, ride):
     detailed_activity.photos.primary = primary_photo
     detailed_activity.total_photo_count = 1
     with patch("freezing.sync.data.activity.meta.scoped_session", return_value=session):
+        session.get.return_value = None  # the photo isn't in the session
         activity_sync.write_ride_photo_primary(detailed_activity, ride)
         assert session.add.call_count == 1
         assert session.flush.call_count == 1

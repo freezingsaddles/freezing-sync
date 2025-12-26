@@ -8,7 +8,7 @@ from freezing.model import meta
 from freezing.model.orm import Athlete, Ride, RideEffort, RideError, RideGeo, RidePhoto
 from geoalchemy2.elements import WKTElement
 from sqlalchemy import and_, func, text
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import Session, joinedload
 from stravalib import unit_helper
 from stravalib.client import BatchedResultsIterator
 from stravalib.exc import AccessUnauthorized, Fault, ObjectNotFound
@@ -66,12 +66,11 @@ class ActivitySync(BaseSync):
         :param ride: The ride model object.
         """
         # Should apply to both new and preexisting rides ...
-        # If there are multiple instagram photos, then request syncing of non-primary photos too.
 
-        if strava_activity.photo_count > 1 and ride.photos_fetched is None:
-            self.logger.debug(
-                "Scheduling non-primary photos sync for {!r}".format(ride)
-            )
+        photo_count = (
+            meta.scoped_session().query(RidePhoto).filter_by(ride_id=ride.id).count()
+        )
+        if photo_count != strava_activity.total_photo_count:
             ride.photos_fetched = False
 
         ride.name = strava_activity.name
@@ -228,42 +227,8 @@ class ActivitySync(BaseSync):
             self.logger.exception("Error adding effort for ride: {0}".format(ride))
             raise
 
-    def _make_photo_from_instagram(
-        self, photo: ActivityPhotoPrimary, ride: Ride
-    ) -> Optional[RidePhoto]:
-        """
-        Writes an instagram primary photo to db.
-
-        :param photo: The primary photo from an activity.
-        :param ride: The db model object for ride.
-        :return: The newly added ride photo object.
-        """
-
-        # Here is when we have an Instagram photo as primary:
-        #  u'photos': {u'count': 1,
-        #   u'primary': {u'id': 106409096,
-        #    u'source': 2,
-        #    u'unique_id': None,
-        #    u'urls': {u'100': u'https://instagram.com/p/88qaqZvrBI/media?size=t',
-        #     u'600': u'https://instagram.com/p/88qaqZvrBI/media?size=l'}},
-        #   u'use_prima ry_photo': False},
-
-        p = RidePhoto()
-        p.id = photo.id
-        p.ref = re.match(r"(.+/)media\?size=.$", photo.urls["100"]).group(1)
-        p.img_l = photo.urls["600"]
-        p.img_t = photo.urls["100"]
-
-        p.ride_id = ride.id
-        p.primary = True
-        p.source = photo.source
-
-        self.logger.debug("Writing (primary) Instagram ride photo: {!r}".format(p))
-
-        return p
-
     def _make_photo_from_native(
-        self, photo: ActivityPhotoPrimary, ride: Ride
+        self, activity_photo: ActivityPhotoPrimary, ride: Ride, session: Session
     ) -> Optional[RidePhoto]:
         """
         Writes a data native (source=1) primary photo to db.
@@ -280,24 +245,32 @@ class ActivitySync(BaseSync):
         #     u'600': u'https://dgtzuqphqg23d.cloudfront.net/Vvm_Mcfk1SP-VWdglQJImBvKzGKRJrHlNN4BqAqD1po-768x576.jpg'}},
         #   u'use_primary_photo': False},
 
-        if not photo.urls:
+        if not activity_photo.urls:
             self.logger.warning(
-                "Photo {} present, but has no URLs (skipping)".format(photo)
+                "Photo {} present, but has no URLs (skipping)".format(activity_photo)
             )
             return None
 
-        p = RidePhoto()
-        p.id = photo.unique_id
-        p.primary = True
-        p.source = photo.source
-        p.ref = None
-        p.img_l = photo.urls["600"]
-        p.img_t = photo.urls["100"]
-        p.ride_id = ride.id
+        photo = session.get(RidePhoto, activity_photo.unique_id)
+        if photo:
+            # keep the existing photo because we may have captions and things from the
+            # secondary photo sync phase.
+            photo.primary = True
+        else:
+            photo = RidePhoto()
+            photo.id = activity_photo.unique_id
+            photo.primary = True
+            photo.source = activity_photo.source
+            photo.ref = None
+            photo.caption = None
+            photo.img_l = activity_photo.urls["600"]
+            photo.img_t = activity_photo.urls["100"]
+            photo.ride_id = ride.id
+            session.add(photo)
 
-        self.logger.debug("Creating (primary) native ride photo: {}".format(p))
+            self.logger.debug("Creating (primary) native ride photo: {}".format(photo))
 
-        return p
+        session.flush()
 
     def write_ride_photo_primary(self, strava_activity: DetailedActivity, ride: Ride):
         """
@@ -311,33 +284,28 @@ class ActivitySync(BaseSync):
         """
         session = meta.scoped_session()
 
-        # If we have > 1 instagram photo, then we don't do anything.
-        if strava_activity.photo_count > 1:
-            self.logger.debug(
-                "Ignoring basic sync for {} since there are > 1 instagram photos."
-            )
-            return
+        primary_activity_photo = strava_activity.photos.primary
 
-        # Start by removing any primary photos for this ride.
-        session.execute(
-            RidePhoto.__table__.delete().where(
-                and_(RidePhoto.ride_id == strava_activity.id, RidePhoto.primary == True)
-            )
+        # Start by unprimarying any stale primary photos for this ride. Photo sync will
+        # take care of physically deleting any deleted photos.
+        primary_photos = session.query(RidePhoto).filter_by(
+            ride_id=strava_activity.id, primary=True
         )
+        for primary_photo in primary_photos:
+            if (
+                not primary_activity_photo
+                or primary_activity_photo.unique_id != primary_photo.id
+            ):
+                primary_photo.primary = False
+                session.flush()
 
-        primary_photo = strava_activity.photos.primary
-
-        if primary_photo:
-            if primary_photo.source == 1:
-                p = self._make_photo_from_native(primary_photo, ride)
-            else:
-                p = self._make_photo_from_instagram(primary_photo, ride)
-            session.add(p)
-            session.flush()
+        if primary_activity_photo:
+            self._make_photo_from_native(primary_activity_photo, ride, session)
 
     def sync_rides_detail(
         self,
         athlete_id: int = None,
+        activity_id: int = None,
         rewrite: bool = False,
         max_records: int = None,
         use_cache: bool = True,
@@ -361,6 +329,9 @@ class ActivitySync(BaseSync):
         if athlete_id:
             self.logger.info("Filtering activity details for {}".format(athlete_id))
             q = q.filter(Ride.athlete_id == athlete_id)
+
+        if activity_id:
+            q = q.filter(Ride.id == activity_id)
 
         if max_records:
             self.logger.info("Limiting to {} records".format(max_records))
@@ -679,6 +650,7 @@ class ActivitySync(BaseSync):
         activities = client.get_activities(
             after=start_date, limit=None
         )  # type: BatchedResultsIterator[SummaryActivity]
+
         filtered_rides = [
             a
             for a in activities
@@ -783,11 +755,9 @@ class ActivitySync(BaseSync):
 
             ride.track_fetched = False
 
-            # photo_count refers to instagram photos
-            if activity.photo_count > 1:
+            # update_ride_basic will do this anyway
+            if activity.total_photo_count > 0:
                 ride.photos_fetched = False
-            else:
-                ride.photos_fetched = None
 
             session.add(ride)
 
@@ -993,7 +963,7 @@ class ActivitySync(BaseSync):
             if end_date is None:
                 end_date = config.END_DATE
 
-            if start_date > datetime.now():
+            if start_date > arrow.now():
                 return
 
             self.logger.debug(
