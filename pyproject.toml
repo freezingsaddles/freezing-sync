@@ -12,7 +12,7 @@ maintainers = [
 ]
 license = {text = "Apache License (2.0)"}
 dependencies = [
-    "APScheduler==3.11.1",
+    "APScheduler==3.11.2",
     "GeoAlchemy2==0.17.1",
     "PyMySQL==1.1.2",
     "SQLAlchemy==2.0.45",
