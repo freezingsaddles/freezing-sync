@@ -10,6 +10,7 @@ from freezing.sync.autolog import log
 from freezing.sync.config import config, init_logging
 from freezing.sync.data.activity import ActivitySync
 from freezing.sync.data.athlete import AthleteSync
+from freezing.sync.data.photos import PhotoSync
 from freezing.sync.data.weather import WeatherSync
 
 # from freezing.sync.workflow import configured_publisher
@@ -29,6 +30,7 @@ def main():
     activity_sync = ActivitySync()
     weather_sync = WeatherSync()
     athlete_sync = AthleteSync()
+    photo_sync = PhotoSync()
 
     # Every hour run a sync on the activities for athletes
     # falling into the specified segment
@@ -43,7 +45,7 @@ def main():
 
     scheduler.add_job(segmented_sync_activities, "cron", minute="50")
 
-    # This should generally not pick up anytihng.
+    # This should generally not pick up anything.
     scheduler.add_job(activity_sync.sync_rides_detail, "cron", minute="20")
 
     # Sync weather every hour
@@ -51,6 +53,9 @@ def main():
 
     # Sync athletes every hour
     scheduler.add_job(athlete_sync.sync_athletes, "cron", minute="30")
+
+    # Sync photos every hour
+    scheduler.add_job(photo_sync.sync_photos, "cron", minute="35")
 
     scheduler.start()
 

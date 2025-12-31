@@ -38,8 +38,10 @@ class PhotoSync(BaseSync):
                     client = StravaClientForAthlete(ride.athlete)
                     big_photos = client.get_activity_photos(ride.id, size=BigSize)
                     self.write_ride_photos_nonprimary(big_photos, ride)
-                    small_photos = client.get_activity_photos(ride.id, size=SmallSize)
-                    self.write_ride_photos_nonprimary(small_photos, ride)
+                    # We don't display thumbnails because they are too small, so don't
+                    # sync them anymore.
+                    # small_photos = client.get_activity_photos(ride.id, size=SmallSize)
+                    # self.write_ride_photos_nonprimary(small_photos, ride)
                 except:
                     self.logger.exception(
                         "Error fetching/writing "
@@ -71,6 +73,8 @@ class PhotoSync(BaseSync):
                         activity_photo
                     )
                 )
+                continue
+            if activity_photo.caption and "#nobafs" in activity_photo.caption.lower():
                 continue
 
             # If it's already in the db, then skip it.
