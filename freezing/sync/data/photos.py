@@ -21,6 +21,7 @@ class PhotoSync(BaseSync):
         athlete_id: int | None = None,
         activity_id: int | None = None,
         force: bool = False,
+        verbose: bool = False,
     ):
         with meta.transaction_context() as sess:
             q = sess.query(Ride)
@@ -37,6 +38,9 @@ class PhotoSync(BaseSync):
                 try:
                     client = StravaClientForAthlete(ride.athlete)
                     big_photos = client.get_activity_photos(ride.id, size=BigSize)
+                    if verbose:
+                        for photo in big_photos:
+                            self.logger.info(f"Big photo: {str(photo)}")
                     self.write_ride_photos_nonprimary(big_photos, ride)
                     # We don't display thumbnails because they are too small, so don't
                     # sync them anymore.
