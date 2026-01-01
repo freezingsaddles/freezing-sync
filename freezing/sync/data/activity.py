@@ -253,6 +253,7 @@ class ActivitySync(BaseSync):
             # keep the existing photo because we may have captions and things from the
             # secondary photo sync phase.
             photo.primary = True
+            photo.img_l = photo.img_l or activity_photo.urls["600"]
         else:
             photo = RidePhoto()
             photo.id = activity_photo.unique_id
@@ -482,8 +483,8 @@ class ActivitySync(BaseSync):
             )
             raise
         try:
-            self.logger.info("Writing out primary photo for {!r}".format(ride))
-            if strava_activity.total_photo_count > 0 and not ride.private:
+            if strava_activity.total_photo_count and not ride.private:
+                self.logger.info("Writing out primary photo for {!r}".format(ride))
                 self.write_ride_photo_primary(strava_activity, ride)
             else:
                 self.logger.debug("No photos for {!r}".format(ride))

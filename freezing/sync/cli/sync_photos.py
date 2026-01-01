@@ -25,6 +25,12 @@ class SyncPhotosScript(BaseCommand):
             default=False,
             help="Force re-sync.",
         )
+        parser.add_argument(
+            "--verbose",
+            action="store_true",
+            default=False,
+            help="Log response.",
+        )
         return parser
 
     def execute(self, args):
@@ -33,6 +39,7 @@ class SyncPhotosScript(BaseCommand):
             athlete_id=args.athlete_id,
             activity_id=args.activity_id,
             force=args.force,
+            verbose=args.verbose,
         )
 
 
