@@ -41,11 +41,11 @@ class PhotoSync(BaseSync):
                     if verbose:
                         for photo in big_photos:
                             self.logger.info(f"Big photo: {str(photo)}")
-                    self.write_ride_photos_nonprimary(big_photos, ride)
+                    self.write_ride_photos_nonprimary(big_photos, ride, BigSize)
                     # We don't display thumbnails because they are too small, so don't
                     # sync them anymore.
                     # small_photos = client.get_activity_photos(ride.id, size=SmallSize)
-                    # self.write_ride_photos_nonprimary(small_photos, ride)
+                    # self.write_ride_photos_nonprimary(small_photos, ride, SmallSize)
                 except:
                     self.logger.exception(
                         "Error fetching/writing "
@@ -55,7 +55,10 @@ class PhotoSync(BaseSync):
                     )
 
     def write_ride_photos_nonprimary(
-        self, activity_photos: BatchedResultsIterator[ActivityPhoto], ride: Ride
+        self,
+        activity_photos: BatchedResultsIterator[ActivityPhoto],
+        ride: Ride,
+        size: int,
     ):
         """
         Writes out/updates all photos associated with a ride to the database.
@@ -71,10 +74,10 @@ class PhotoSync(BaseSync):
         existing_photos = {photo.id: photo for photo in photos}
 
         for activity_photo in activity_photos:
-            if not activity_photo.urls:
+            if not activity_photo.urls or str(size) not in activity_photo.urls:
                 self.logger.warning(
-                    "Photo {} present, but has no URLs (skipping)".format(
-                        activity_photo
+                    "Photo {} present, but has no {} URL (skipping)".format(
+                        activity_photo, size
                     )
                 )
                 continue
@@ -96,11 +99,14 @@ class PhotoSync(BaseSync):
                     ride_id=ride.id,
                     ref=activity_photo.ref,
                     primary=False,
+                    source=activity_photo.source,  # meaningless
                 )
                 meta.scoped_session().add(photo)
 
-            photo.img_l = activity_photo.urls.get(str(BigSize)) or photo.img_l
-            photo.img_t = activity_photo.urls.get(str(SmallSize)) or photo.img_t
+            if size == BigSize:  # horrid, we should just remove thumbnails
+                photo.img_l = activity_photo.urls.get(str(size)) or photo.img_l
+            else:
+                photo.img_t = activity_photo.urls.get(str(size)) or photo.img_t
             photo.caption = activity_photo.caption
 
             meta.scoped_session().flush()
