@@ -67,10 +67,12 @@ class ActivitySync(BaseSync):
         """
         # Should apply to both new and preexisting rides ...
 
-        photo_count = (
-            meta.scoped_session().query(RidePhoto).filter_by(ride_id=ride.id).count()
-        )
-        if photo_count != strava_activity.total_photo_count:
+        # photo_count = (
+        #     meta.scoped_session().query(RidePhoto).filter_by(ride_id=ride.id).count()
+        # )
+        # if photo_count != strava_activity.total_photo_count:
+        #     ride.photos_fetched = False
+        if strava_activity.total_photo_count:
             ride.photos_fetched = False
 
         ride.name = strava_activity.name
