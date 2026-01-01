@@ -67,14 +67,6 @@ class ActivitySync(BaseSync):
         """
         # Should apply to both new and preexisting rides ...
 
-        # photo_count = (
-        #     meta.scoped_session().query(RidePhoto).filter_by(ride_id=ride.id).count()
-        # )
-        # if photo_count != strava_activity.total_photo_count:
-        #     ride.photos_fetched = False
-        if strava_activity.total_photo_count:
-            ride.photos_fetched = False
-
         ride.name = strava_activity.name
         ride.start_date = strava_activity.start_date_local
 
@@ -141,6 +133,9 @@ class ActivitySync(BaseSync):
         )
         ride.elevation_gain = int(unit_helper.feet(elev_gain_quantity).magnitude)
         ride.timezone = strava_activity.timezone.timezone().zone
+
+        if ride.photos_fetched is None and strava_activity.total_photo_count:
+            ride.photos_fetched = False
 
         # # Short-circuit things that might result in more obscure db errors later.
         if ride.elapsed_time is None:
@@ -501,6 +496,12 @@ class ActivitySync(BaseSync):
             )
             raise
         ride.detail_fetched = True
+        # We don't get events when photo descriptions are updated, so instead
+        # every time we fetch the details we schedule a photo fetch. This will
+        # trigger alongside our automatic ride-effort re-sync. We don't gate
+        # this on activity.total_photo_count because if someone deletes their
+        # photos in Strava we probably want to resync and delete our photos.
+        ride.photos_fetched = False
 
     def check_activity(
         self,
