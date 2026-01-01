@@ -11,6 +11,7 @@ from freezing.model.orm import Athlete
 from freezing.sync.autolog import log
 from freezing.sync.config import Config, statsd
 from freezing.sync.data.activity import ActivitySync
+from freezing.sync.data.photos import PhotoSync
 from freezing.sync.data.streams import StreamSync
 from freezing.sync.exc import ActivityNotFound, IneligibleActivity
 
@@ -24,6 +25,7 @@ class ActivityUpdateSubscriber:
         self.logger = logging.getLogger(__name__)
         self.activity_sync = ActivitySync(self.logger)
         self.streams_sync = StreamSync(self.logger)
+        self.photos_sync = PhotoSync(self.logger)
 
         """Delay between requests to Strava API to avoid rate limiting."""
         self._THROTTLE_DELAY = 3.0
@@ -59,7 +61,7 @@ class ActivityUpdateSubscriber:
                     self.activity_sync.fetch_and_store_activity_detail(
                         athlete_id=message.athlete_id, activity_id=message.activity_id
                     )
-                    # (We'll assume the stream doens't need re-fetching.)
+                    # (We'll assume the stream/photos don't need re-fetching.)
 
                 elif message.operation is AspectType.create:
                     statsd.increment(
@@ -70,6 +72,9 @@ class ActivityUpdateSubscriber:
                         athlete_id=message.athlete_id, activity_id=message.activity_id
                     )
                     self.streams_sync.fetch_and_store_activity_streams(
+                        athlete_id=message.athlete_id, activity_id=message.activity_id
+                    )
+                    self.photos_sync.sync_photos(
                         athlete_id=message.athlete_id, activity_id=message.activity_id
                     )
             except (ActivityNotFound, IneligibleActivity) as x:
