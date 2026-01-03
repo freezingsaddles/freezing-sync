@@ -55,7 +55,7 @@ def main():
     scheduler.add_job(athlete_sync.sync_athletes, "cron", minute="30")
 
     # Sync photos every hour
-    scheduler.add_job(photo_sync.sync_photos, "interval", minutes="5")
+    scheduler.add_job(photo_sync.sync_photos, "interval", minutes=5)
 
     scheduler.start()
 
