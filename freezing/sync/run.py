@@ -45,8 +45,10 @@ def main():
 
     scheduler.add_job(segmented_sync_activities, "cron", minute="50")
 
-    # This should generally not pick up anything.
-    scheduler.add_job(activity_sync.sync_rides_detail, "cron", minute="20")
+    # Sync ride details every 5 minutes. This only fetches rides flagged
+    # for detail sync so won't hammer Strava. Mostly this only happens
+    # when photo sync identifies photos but no primary.
+    scheduler.add_job(activity_sync.sync_rides_detail, "interval", minutes=5)
 
     # Sync weather every hour
     scheduler.add_job(weather_sync.sync_weather, "cron", minute="45")
@@ -54,7 +56,8 @@ def main():
     # Sync athletes every hour
     scheduler.add_job(athlete_sync.sync_athletes, "cron", minute="30")
 
-    # Sync photos every hour
+    # Sync photos every 5 minutes. This only fetches rides flagged
+    # for sync so won't hammer Strava.
     scheduler.add_job(photo_sync.sync_photos, "interval", minutes=5)
 
     scheduler.start()

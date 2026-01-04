@@ -72,6 +72,8 @@ class PhotoSync(BaseSync):
 
         photos = meta.scoped_session().query(RidePhoto).filter_by(ride_id=ride.id)
         existing_photos = {photo.id: photo for photo in photos}
+        found_primary = False
+        found_photo = False
 
         for activity_photo in activity_photos:
             if not activity_photo.urls or str(size) not in activity_photo.urls:
@@ -83,15 +85,17 @@ class PhotoSync(BaseSync):
                 continue
             if activity_photo.caption and "#nobafs" in activity_photo.caption.lower():
                 continue
+            found_photo = True
 
             # If it's already in the db, then skip it.
             photo = existing_photos.get(activity_photo.unique_id)
             if photo:
                 del existing_photos[activity_photo.unique_id]
+                found_primary = found_primary or photo.primary
             else:
                 self.logger.info(
                     "Adding photo {}: {}".format(
-                        activity_photo.uid, activity_photo.caption
+                        activity_photo.unique_id, activity_photo.caption
                     )
                 )
                 photo = RidePhoto(
@@ -116,3 +120,8 @@ class PhotoSync(BaseSync):
             meta.scoped_session().delete(deleted_photo)
 
         ride.photos_fetched = True
+
+        # If there are photos but none primary then need to refetch the ride
+        # to identify the primary.
+        if found_photo and not found_primary:
+            ride.detail_fetched = False
