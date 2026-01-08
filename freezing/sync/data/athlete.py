@@ -176,6 +176,8 @@ class AthleteSync(BaseSync):
                     team = Team()
                 team.id = club.id
                 team.name = club.name
+                team.cover_photo = club.cover_photo
+                team.profile_photo = club.profile
                 team.leaderboard_exclude = club.id in config.OBSERVER_TEAMS
                 athlete_model.team = team
                 meta.scoped_session().add(team)
