@@ -61,7 +61,12 @@ class ActivityUpdateSubscriber:
                     self.activity_sync.fetch_and_store_activity_detail(
                         athlete_id=message.athlete_id, activity_id=message.activity_id
                     )
-                    # (We'll assume the stream/photos don't need re-fetching.)
+                    self.streams_sync.fetch_and_store_activity_streams(
+                        athlete_id=message.athlete_id, activity_id=message.activity_id
+                    )
+                    self.photos_sync.sync_photos(
+                        athlete_id=message.athlete_id, activity_id=message.activity_id, force=True
+                    )
 
                 elif message.operation is AspectType.create:
                     statsd.increment(
