@@ -65,7 +65,9 @@ class ActivityUpdateSubscriber:
                         athlete_id=message.athlete_id, activity_id=message.activity_id
                     )
                     self.photos_sync.sync_photos(
-                        athlete_id=message.athlete_id, activity_id=message.activity_id, force=True
+                        athlete_id=message.athlete_id,
+                        activity_id=message.activity_id,
+                        force=True,
                     )
 
                 elif message.operation is AspectType.create:
