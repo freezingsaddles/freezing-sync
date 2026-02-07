@@ -181,6 +181,9 @@ class WeatherSync(BaseSync):
                 rw.ride_rain = any([o.precip_type == "rain" for o in ride_observations])
                 rw.ride_snow = any([o.precip_type == "snow" for o in ride_observations])
 
+                rw.wind_speed = mean([o.wind_speed for o in ride_observations])
+                rw.wind_gust = max([o.wind_gust for o in ride_observations])
+
                 rw.day_temp_min = hist.day.temperature_min
                 rw.day_temp_max = hist.day.temperature_max
 
