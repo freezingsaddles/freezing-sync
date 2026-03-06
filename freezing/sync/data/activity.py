@@ -635,7 +635,7 @@ class ActivitySync(BaseSync):
             client = StravaClientForAthlete(athlete)
         except Fault as x:
             self.logger.warning(str(x))
-            return []
+            raise
 
         def is_excluded(activity):
             try:
