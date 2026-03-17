@@ -124,7 +124,7 @@ class ActivitySync(BaseSync):
         ride.visibility = strava_activity.visibility
 
         ride.commute = strava_activity.commute
-        ride.trainer = strava_activity.trainer
+        ride.ride_type = strava_activity.type
 
         elev_gain_quantity = (
             strava_activity.total_elevation_gain.quantity()

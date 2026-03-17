@@ -39,7 +39,7 @@ def detailed_activity():
     activity.location_city = "Test City"
     activity.location_state = "Test State"
     activity.commute = False
-    activity.trainer = False
+    activity.type = "Ride"
     activity.visibility = "everyone"
     activity.total_elevation_gain = Distance(100.0)
 
@@ -86,7 +86,7 @@ def test_update_ride_basic(activity_sync, detailed_activity, ride):
         assert ride.moving_time == detailed_activity.moving_time.total_seconds()
         assert ride.location == "Test City, Test State"
         assert ride.commute == detailed_activity.commute
-        assert ride.trainer == detailed_activity.trainer
+        assert ride.ride_type == detailed_activity.type
         assert ride.visibility == detailed_activity.visibility
         assert ride.elevation_gain == pytest.approx(328.084, rel=1e-3)  # 100m to feet
         assert ride.timezone == detailed_activity.timezone.timezone().zone
