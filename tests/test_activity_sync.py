@@ -39,7 +39,7 @@ def detailed_activity():
     activity.location_city = "Test City"
     activity.location_state = "Test State"
     activity.commute = False
-    activity.type = "Ride"
+    activity.type = None
     activity.visibility = "everyone"
     activity.total_elevation_gain = Distance(100.0)
 
