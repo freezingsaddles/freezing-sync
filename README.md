@@ -14,7 +14,7 @@ To get started, you should clone the project and install the dependencies:
 
 ```bash
 shell$ git clone https://github.com/freezingsaddles/freezing-sync
-shell$ cd freezing-web
+shell$ cd freezing-sync
 shell$ python3 -m venv env
 shell$ source env/bin/activate
 (env) shell$ pip install -e '.[dev]'
@@ -58,6 +58,78 @@ APP_SETTINGS=local.cfg python -m freezing.sync.cli.sync_weather --debug --limit 
 There are a few additional settings you may need (i.e. not to be default) when not running in Docker:
 - `STRAVA_ACTIVITY_CACHE_DIR`: Where to put cached activities (absolute path is a good idea).
 - `VISUAL_CROSSING_CACHE_DIR`: Similarly, where should weather files be stored?
+
+#### One-shot CLI commands
+
+For local development, you can run individual sync operations without starting the full daemon
+and without Beanstalkd running. The two most useful are:
+
+```bash
+# Sync athlete records (names, team membership) from Strava
+APP_SETTINGS=local.cfg freezing-sync-athletes
+
+# Sync ride activities for all athletes
+APP_SETTINGS=local.cfg freezing-sync-activities
+```
+
+These commands run, do their work, and exit. The main `freezing-sync` entry point is a
+long-running daemon that requires Beanstalkd; use these CLI commands instead for local testing.
+
+#### Getting OAuth tokens for local testing
+
+`freezing-sync` requires real Strava OAuth tokens to call the Strava API. These tokens are stored
+in the `athletes` table by [freezing-web](https://github.com/freezingsaddles/freezing-web) when
+an athlete completes the Strava OAuth flow.
+
+A freshly initialized local database has no athletes and no tokens, so `freezing-sync-athletes`
+and `freezing-sync-activities` will have nothing to sync. The recommended approach for local
+development is to restore a production database dump — see the "On dumping and restoring the
+database" section in the freezing-web README for instructions.
+
+**Strava club membership and team assignment:** `freezing-sync` assigns athletes to teams based
+on which Strava clubs they belong to, matched against the club IDs in `MAIN_TEAM` and `TEAMS` in
+your `local.cfg`. The sync will run without club membership, but athletes will have no team
+assigned. For realistic local data, consider joining last year's competition clubs on Strava —
+the club IDs are visible in the URL at `https://www.strava.com/clubs/CLUB_ID`.
+
+**Manual token bootstrap procedure** (if you don't have a DB dump):
+
+1. Visit this URL in your browser (substituting your `STRAVA_CLIENT_ID`):
+
+   ```
+   https://www.strava.com/oauth/authorize?client_id=CLIENT_ID&redirect_uri=http://127.0.0.1:5000/authorization&response_type=code&scope=read,activity:read_all,profile:read_all,read_all
+   ```
+
+   After authorizing, Strava will redirect to your local server. Copy the `code` value from the
+   redirect URL query string.
+
+2. Exchange the code for tokens:
+
+   ```bash
+   curl -X POST https://www.strava.com/oauth/token \
+     -d client_id=CLIENT_ID \
+     -d client_secret=CLIENT_SECRET \
+     -d code=AUTH_CODE \
+     -d grant_type=authorization_code
+   ```
+
+   The response will contain `access_token`, `refresh_token`, `expires_at`, and the athlete's
+   `id`.
+
+3. Insert the tokens directly into the database:
+
+   ```sql
+   INSERT INTO athletes (id, name, display_name, access_token, refresh_token, expires_at)
+   VALUES (ATHLETE_ID, 'Your Name', 'Your Name', 'ACCESS_TOKEN', 'REFRESH_TOKEN', EXPIRES_AT)
+   ON DUPLICATE KEY UPDATE
+     access_token = VALUES(access_token),
+     refresh_token = VALUES(refresh_token),
+     expires_at = VALUES(expires_at);
+   ```
+
+See [freezing-web#620](https://github.com/freezingsaddles/freezing-web/issues/620) and
+[freezing-sync#24](https://github.com/freezingsaddles/freezing-sync/issues/24) for more context
+on this local development limitation.
 
 ### Running Unit Tests
 
