@@ -712,80 +712,81 @@ class ActivitySync(BaseSync):
         :rtype: bafs.orm.Ride
         """
         session = meta.scoped_session()
-        if activity.start_latlng:
-            start_geo = WKTElement(
-                wktutils.point_wkt(activity.start_latlng.lon, activity.start_latlng.lat)
-            )
-        else:
-            start_geo = None
-
-        if activity.end_latlng:
-            end_geo = WKTElement(
-                wktutils.point_wkt(activity.end_latlng.lon, activity.end_latlng.lat)
-            )
-        else:
-            end_geo = None
-
-        athlete_id = activity.athlete.id
-
-        # Fail fast for invalid data (this can happen with manual-entry rides)
-        assert activity.elapsed_time is not None
-        assert activity.moving_time is not None
-        assert activity.distance is not None
-
-        # Find the model object for that athlete (or create if doesn't exist)
-        athlete = session.get(Athlete, athlete_id)
-        if not athlete:
-            # The athlete has to exist since otherwise we wouldn't be able to query their rides
-            raise ValueError(
-                "Somehow you are attempting to write rides for an athlete not found in the database."
-            )
-
-        if start_geo is not None or end_geo is not None:
-            ride_geo = RideGeo()
-            ride_geo.start_geo = start_geo
-            ride_geo.end_geo = end_geo
-            ride_geo.ride_id = activity.id
-            session.merge(ride_geo)
-
-        ride = session.get(Ride, activity.id)
-        new_ride = ride is None
-
-        if new_ride:
-            ride = Ride(activity.id)
-
-            # Set the "workflow flags".  These all default to False in the database.  The value of NULL means
-            # that the workflow flag does not apply (e.g. do not bother fetching this)
-
-            ride.detail_fetched = False  # Just to be explicit
-
-            ride.track_fetched = False
-
-            # update_ride_basic will do this anyway
-            if activity.total_photo_count > 0:
-                ride.photos_fetched = False
-
-            session.add(ride)
-
-        else:
-            # If ride has been cropped, we re-fetch it.
-            if round(ride.distance, 3) != round(
-                unit_helper.miles(activity.distance.quantity()).magnitude, 3
-            ):
-                self.logger.info(
-                    "Queing resync of details for activity {0!r}: "
-                    "distance mismatch ({1} != {2})".format(
-                        activity,
-                        ride.distance,
-                        unit_helper.miles(activity.distance.quantity().magnitude),
-                    )
+        with session.no_autoflush:
+            if activity.start_latlng:
+                start_geo = WKTElement(
+                    wktutils.point_wkt(activity.start_latlng.lon, activity.start_latlng.lat)
                 )
-                ride.detail_fetched = False
+            else:
+                start_geo = None
+
+            if activity.end_latlng:
+                end_geo = WKTElement(
+                    wktutils.point_wkt(activity.end_latlng.lon, activity.end_latlng.lat)
+                )
+            else:
+                end_geo = None
+
+            athlete_id = activity.athlete.id
+
+            # Fail fast for invalid data (this can happen with manual-entry rides)
+            assert activity.elapsed_time is not None
+            assert activity.moving_time is not None
+            assert activity.distance is not None
+
+            # Find the model object for that athlete (or create if doesn't exist)
+            athlete = session.get(Athlete, athlete_id)
+            if not athlete:
+                # The athlete has to exist since otherwise we wouldn't be able to query their rides
+                raise ValueError(
+                    "Somehow you are attempting to write rides for an athlete not found in the database."
+                )
+
+            if start_geo is not None or end_geo is not None:
+                ride_geo = RideGeo()
+                ride_geo.start_geo = start_geo
+                ride_geo.end_geo = end_geo
+                ride_geo.ride_id = activity.id
+                session.merge(ride_geo)
+
+            ride = session.get(Ride, activity.id)
+            new_ride = ride is None
+
+            if new_ride:
+                ride = Ride(activity.id)
+
+                # Set the "workflow flags".  These all default to False in the database.  The value of NULL means
+                # that the workflow flag does not apply (e.g. do not bother fetching this)
+
+                ride.detail_fetched = False  # Just to be explicit
+
                 ride.track_fetched = False
 
-        ride.athlete = athlete
+                # update_ride_basic will do this anyway
+                if activity.total_photo_count > 0:
+                    ride.photos_fetched = False
 
-        self.update_ride_basic(strava_activity=activity, ride=ride)
+                session.add(ride)
+
+            else:
+                # If ride has been cropped, we re-fetch it.
+                if round(ride.distance, 3) != round(
+                    unit_helper.miles(activity.distance.quantity()).magnitude, 3
+                ):
+                    self.logger.info(
+                        "Queing resync of details for activity {0!r}: "
+                        "distance mismatch ({1} != {2})".format(
+                            activity,
+                            ride.distance,
+                            unit_helper.miles(activity.distance.quantity().magnitude),
+                        )
+                    )
+                    ride.detail_fetched = False
+                    ride.track_fetched = False
+
+            ride.athlete = athlete
+
+            self.update_ride_basic(strava_activity=activity, ride=ride)
 
         if new_ride:
             statsd.histogram("strava.activity.distance", ride.distance)
