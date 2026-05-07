@@ -125,10 +125,7 @@ the club IDs are visible in the URL at `https://www.strava.com/clubs/CLUB_ID`.
 **Manual token bootstrap procedure** (if you don't have a DB dump):
 
 1. Visit this URL in your browser (substituting your `STRAVA_CLIENT_ID`):
-
-   ```
-   https://www.strava.com/oauth/authorize?client_id=CLIENT_ID&redirect_uri=http://127.0.0.1:5000/authorization&response_type=code&scope=read,activity:read_all,profile:read_all,read_all
-   ```
+   `https://www.strava.com/oauth/authorize?client_id=CLIENT_ID&redirect_uri=http://127.0.0.1:5000/authorization&response_type=code&scope=read,activity:read_all,profile:read_all,read_all`
 
    After authorizing, Strava will redirect to your local server. Copy the `code` value from the
    redirect URL query string.
@@ -174,6 +171,131 @@ pytest
 The `freezing-sync` code is intended to be [PEP-8](https://www.python.org/dev/peps/pep-0008/) compliant. Code formatting is done with [black](https://black.readthedocs.io/en/stable/), [isort](https://pycqa.github.io/isort/) and [djlint](https://www.djlint.com/) and can be linted with [flake8](http://flake8.pycqa.org/en/latest/). See the [pyproject.toml](pyproject.toml) file and install the dev dependencies to get these tools.
 
 This project also has _optional_ support for [pre-commit](https://pre-commit.org) to run these checks automatically before you commit. To install pre-commit, install the `dev` dependencies and then run `pre-commit install` in the root of the repository.
+
+## End-to-End Local Development Walkthrough
+
+This section documents a complete local setup journey from scratch, including
+pitfalls encountered along the way. It covers both `freezing-web` and
+`freezing-sync` since they share a database.
+
+### Prerequisites
+
+- Python 3.11+
+- Docker Desktop running
+- `gh` CLI authenticated with GitHub
+- A Strava account with rides recorded during the competition dates
+- A registered Strava API application (create one at <https://www.strava.com/settings/api>)
+- A Visual Crossing account for weather data (free tier at <https://www.visualcrossing.com>)
+
+### Step 1: Get freezing-web running first
+
+`freezing-sync` depends on the database that `freezing-web` manages. Start there:
+
+```bash
+git clone https://github.com/freezingsaddles/freezing-web
+cd freezing-web
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e '.[dev]'
+docker-compose up -d freezing-db
+APP_SETTINGS=development.cfg freezing-server
+```
+
+See the [freezing-web README](https://github.com/freezingsaddles/freezing-web) for full
+setup instructions including the `development.cfg` configuration.
+
+### Step 2: Bootstrap your Strava OAuth tokens
+
+A fresh database has no athletes and no tokens. `freezing-sync` needs real OAuth tokens
+to call the Strava API. The recommended path is to restore a production database dump —
+see the "On dumping and restoring the database" section in the freezing-web README.
+
+**If you don't have a production dump**, you can use your own personal Strava account
+as a test athlete, provided you have rides recorded during the competition dates. Use
+the manual token bootstrap procedure in the "Getting OAuth tokens for local testing"
+section above.
+
+> **Important:** The `ENVIRONMENT=localdev` bypass in `freezing-web` intentionally
+> skips real token storage — it fakes OAuth for UI testing only. You need real tokens
+> in the database for `freezing-sync` to work.
+>
+> Setting `ENVIRONMENT=development` to trigger real OAuth may crash `freezing-web`
+> with `NoResultFound` in `set_no_team_global` if the database has no team data yet.
+> This is a known issue tracked in
+> [freezing-web#620](https://github.com/freezingsaddles/freezing-web/issues/620).
+> Use the manual curl + SQL insert procedure instead.
+
+### Step 3: Join the competition Strava clubs
+
+`freezing-sync` assigns athletes to teams based on Strava club membership. Before
+syncing, your Strava account must be a member of:
+
+1. **The main competition club** — the club ID goes in `MAIN_TEAM` in your `local.cfg`
+2. **A team club** — one of the club IDs in `TEAMS` in your `local.cfg`
+
+Club IDs are visible in the URL when you visit a club on Strava:
+`https://www.strava.com/clubs/CLUB_ID`. If you sync without joining these clubs,
+your athlete record will have no team assigned and will not appear on leaderboards.
+
+### Step 4: Sync athletes and rides
+
+With tokens in the database and club memberships in place:
+
+```bash
+cd ~/code/freezing-sync
+source .venv/bin/activate
+
+# Sync your athlete record and team membership from Strava
+APP_SETTINGS=local.cfg freezing-sync-athletes
+
+# Sync your ride activities from Strava
+APP_SETTINGS=local.cfg freezing-sync-activities
+
+# Sync your non-primary photos from Strava
+APP_SETTINGS=local.cfg freezing-sync-photos
+
+# Sync your GPS tracks from Strava
+APP_SETTINGS=local.cfg freezing-sync-streams
+```
+
+A successful sync will log each ride as it is processed. Your rides should then
+appear in the `freezing-web` UI at `http://localhost:5000`.
+
+### Step 5: Sync weather data
+
+```bash
+# Test with a small batch first
+APP_SETTINGS=local.cfg freezing-sync-weather --limit 5
+```
+
+If the first 5 rides succeed, run the full sync:
+
+```bash
+APP_SETTINGS=local.cfg freezing-sync-weather
+```
+
+The free tier of Visual Crossing allows 1000 records per day. A full season of rides
+may take several days to fully populate. Re-running the command on subsequent days
+will make incremental progress — already-cached dates are not re-fetched and do not
+count against the daily limit.
+
+### Troubleshooting
+
+**`freezing-sync-athletes` logs "athlete had no access or refresh token":**
+Your database has no OAuth tokens for that athlete. Follow the manual token
+bootstrap procedure in the "Getting OAuth tokens for local testing" section above.
+
+**Athlete has no team assigned after sync:**
+Your Strava account is not a member of the competition clubs. Join the main
+competition club and a team club on Strava, then re-run `freezing-sync-athletes`.
+
+**`freezing-sync-weather` returns 401:**
+Your `VISUAL_CROSSING_API_KEY` is missing or incorrect. Sign up at
+<https://www.visualcrossing.com> and update `local.cfg`.
+
+**`freezing-sync-weather` returns 429 (Maximum daily cost exceeded):**
+You have hit the free tier limit of 1000 records per day. Wait until midnight
+UTC and re-run — cached results will not be re-fetched.
 
 ## Legal
 
