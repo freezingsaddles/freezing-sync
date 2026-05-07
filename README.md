@@ -56,8 +56,31 @@ APP_SETTINGS=local.cfg python -m freezing.sync.cli.sync_weather --debug --limit 
 ```
 
 There are a few additional settings you may need (i.e. not to be default) when not running in Docker:
+
 - `STRAVA_ACTIVITY_CACHE_DIR`: Where to put cached activities (absolute path is a good idea).
 - `VISUAL_CROSSING_CACHE_DIR`: Similarly, where should weather files be stored?
+
+#### Example local.cfg
+
+Here is a minimal `local.cfg` for local development. The database is provided by
+[freezing-web](https://github.com/freezingsaddles/freezing-web)'s Docker Compose setup —
+start it with `docker-compose up -d freezing-db` from the `freezing-web` directory before
+running any sync commands.
+
+````ini
+SQLALCHEMY_URL = mysql+pymysql://freezing:zeer0@127.0.0.1:3306/freezing
+STRAVA_CLIENT_ID = 12345
+STRAVA_CLIENT_SECRET = your_strava_client_secret
+VISUAL_CROSSING_API_KEY = your_visual_crossing_api_key
+STRAVA_ACTIVITY_CACHE_DIR = data/cache/activities
+VISUAL_CROSSING_CACHE_DIR = data/cache/weather
+MAIN_TEAM = 12345
+TEAMS = 23456,67890
+START_DATE = 2025-01-01
+END_DATE = 2025-02-28
+UPLOAD_GRACE_PERIOD = 2
+DEBUG = false
+```
 
 #### One-shot CLI commands
 
@@ -70,7 +93,14 @@ APP_SETTINGS=local.cfg freezing-sync-athletes
 
 # Sync ride activities for all athletes
 APP_SETTINGS=local.cfg freezing-sync-activities
+
+# Sync weather data for all rides (requires VISUAL_CROSSING_API_KEY)
+APP_SETTINGS=local.cfg freezing-sync-weather
 ```
+
+> **Note:** The free tier of Visual Crossing allows 1000 records per day. Weather results are
+> cached locally (see `VISUAL_CROSSING_CACHE_DIR`), so re-running the command on subsequent days
+> will make incremental progress without re-fetching already-cached dates.
 
 These commands run, do their work, and exit. The main `freezing-sync` entry point is a
 long-running daemon that requires Beanstalkd; use these CLI commands instead for local testing.
