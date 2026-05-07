@@ -221,6 +221,12 @@ APP_SETTINGS=local.cfg freezing-sync-athletes
 
 # Sync your ride activities from Strava
 APP_SETTINGS=local.cfg freezing-sync-activities
+
+# Sync your non-primary photos from Strava
+APP_SETTINGS=local.cfg freezing-sync-photos
+
+# Sync your GPS tracks from Strava
+APP_SETTINGS=local.cfg freezing-sync-streams
 ```
 
 A successful sync will log each ride as it is processed. Your rides should then
