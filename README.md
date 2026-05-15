@@ -300,7 +300,7 @@ UTC and re-run — cached results will not be re-fetched.
 **Map shows no ride tracks after a successful sync:** The freezing-web JSON cache may have captured an empty response before your data was loaded. Clear it:
 
 ```bash
-rm -rf ~/code/freezing-web/data/cache/json/*.json.gz
+rm -f freezing-web/data/cache/json/*.json.gz
 ```
 
 Then reload the map page. The cache is file-based and has no automatic invalidation when new rides are added, so this is a common gotcha when loading data incrementally during local development.
