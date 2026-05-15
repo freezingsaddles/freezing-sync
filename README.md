@@ -297,6 +297,28 @@ Your `VISUAL_CROSSING_API_KEY` is missing or incorrect. Sign up at
 You have hit the free tier limit of 1000 records per day. Wait until midnight
 UTC and re-run — cached results will not be re-fetched.
 
+**Map shows no ride tracks after a successful sync:** The freezing-web JSON cache may have captured an empty response before your data was loaded. Clear it:
+
+```bash
+rm -f freezing-web/data/cache/json/*.json.gz
+```
+
+Then reload the map page. The cache is file-based and has no automatic invalidation when new rides are added, so this is a common gotcha when loading data incrementally during local development.
+
+**`freezing-sync-streams` reports "Fetching gps tracks for 0 activities":** Your `rides` table is empty. Run `freezing-sync-activities` first to populate rides, then re-run `freezing-sync-streams`.
+
+**Strava OAuth tokens expire after 6 hours.** If sync commands start failing with auth errors, refresh your token with:
+
+```bash
+curl -X POST https://www.strava.com/oauth/token \
+  -d client_id=CLIENT_ID \
+  -d client_secret=CLIENT_SECRET \
+  -d refresh_token=YOUR_REFRESH_TOKEN \
+  -d grant_type=refresh_token
+```
+
+Then update the `access_token` and `expires_at` in the `athletes` table.
+
 ## Legal
 
 This software is a an [Apache 2.0 Licensed](LICENSE), community-driven effort, and as such the contributions are owned by the individual contributors:
