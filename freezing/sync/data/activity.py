@@ -816,7 +816,8 @@ class ActivitySync(BaseSync):
 
         # Quickly filter out only the rides that are not in the database.
         returned_ride_ids = set([r.id for r in api_ride_entries])
-        stored_ride_ids = set([r.id for r in db_rides])
+        db_rides_by_id = {r.id: r for r in db_rides}
+        stored_ride_ids = set(db_rides_by_id.keys())
         # new_ride_ids = list(returned_ride_ids - stored_ride_ids)
         removed_ride_ids = list(stored_ride_ids - returned_ride_ids)
 
@@ -903,14 +904,31 @@ class ActivitySync(BaseSync):
                         ride_ids_needing_streams.append(ride.id)
 
             else:
-                self.logger.debug(
-                    "[SKIPPED EXISTING]: {id} {name!r} ({i}/{num}) ".format(
-                        id=strava_activity.id,
-                        name=strava_activity.name,
-                        i=i + 1,
-                        num=num_rides,
-                    )
+                ride = db_rides_by_id[strava_activity.id]
+                strava_miles = round(
+                    unit_helper.miles(strava_activity.distance.quantity()).magnitude, 3
                 )
+                if round(ride.distance, 3) != strava_miles:
+                    self.logger.info(
+                        "[DISTANCE CHANGED]: {id} {name!r} stored={stored} strava={strava}".format(
+                            id=strava_activity.id,
+                            name=strava_activity.name,
+                            stored=ride.distance,
+                            strava=strava_miles,
+                        )
+                    )
+                    ride.track_fetched = False
+                    ride.detail_fetched = False
+                    sess.commit()
+                else:
+                    self.logger.debug(
+                        "[SKIPPED EXISTING]: {id} {name!r} ({i}/{num}) ".format(
+                            id=strava_activity.id,
+                            name=strava_activity.name,
+                            i=i + 1,
+                            num=num_rides,
+                        )
+                    )
 
         # Remove any rides that are in the database for this athlete that were not in the returned list.
         if removed_ride_ids:
