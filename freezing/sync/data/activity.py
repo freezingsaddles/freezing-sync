@@ -587,8 +587,7 @@ class ActivitySync(BaseSync):
         overlaps = (
             meta.scoped_session()
             .execute(
-                text(
-                    """
+                text("""
                       select R.id
                       from rides R
                       where R.athlete_id = :athlete_id
@@ -596,8 +595,7 @@ class ActivitySync(BaseSync):
                       and R.start_date <= :end_date
                       AND DATE_ADD(R.start_date, INTERVAL R.elapsed_time SECOND) >= :start_date
                       AND R.name not like '%#nooverlap%'
-                    """
-                ).bindparams(
+                    """).bindparams(
                     athlete_id=activity.athlete.id,
                     activity_id=activity.id,
                     start_date=activity.start_date_local + _overlap_ignore,

@@ -39,13 +39,13 @@ classifiers = [
 
 [project.optional-dependencies]
 dev = [
-    "black",
-    "flake8-pyproject",
-    "flake8",
-    "isort",
-    "pre-commit",
-    "pytest",
-    "uppd",
+    "black==26.5.1",
+    "flake8==7.3.0",
+    "flake8-pyproject==1.2.4",
+    "isort==9.0.1",
+    "pre-commit==4.6.2",
+    "pytest==9.1.1",
+    "uppd==1.6.0",
 ]
 
 [project.entry-points.console_scripts]
