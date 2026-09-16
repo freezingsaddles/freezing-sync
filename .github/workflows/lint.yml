@@ -3,16 +3,21 @@ name: Lint
 
 on: pull_request  # yamllint disable-line
 
+permissions:
+  contents: read
+
 jobs:
 
   # Thanks https://black.readthedocs.io/en/stable/integrations/github_actions.html
   lint:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Check out source repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Set up Python environment
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.10"
       - name: Install dev dependencies

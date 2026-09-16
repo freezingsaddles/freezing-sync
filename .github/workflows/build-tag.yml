@@ -6,10 +6,18 @@ on:  # yamllint disable-line
     tags:
       - '*'
 
+permissions:
+  contents: read
+
 jobs:
   build:
-    uses: freezingsaddles/freezing-web/.github/workflows/build-docker.yml@1.6.0
+    permissions:
+      contents: read
+    uses: freezingsaddles/freezing-web/.github/workflows/build-docker.yml@188155b3d3466278116cafb2a3b3c1c2c4773613 # harden-workflows, pending 1.7.0
     with:
       tag: ${{ github.ref_name }}
       repo: freezing-sync
-    secrets: inherit
+      push: true
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
