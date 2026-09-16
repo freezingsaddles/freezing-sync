@@ -19,6 +19,18 @@ from freezing.sync.subscribe import ActivityUpdateSubscriber
 
 def main():
     init_logging()
+
+    try:
+        from importlib.metadata import version as pkg_version
+
+        app_version = pkg_version("freezing-sync")
+    except Exception:
+        app_version = "unknown"
+
+    log.info(
+        f"Starting freezing-sync version={app_version} environment={config.ENVIRONMENT}"
+    )
+
     init_model(config.SQLALCHEMY_URL)
 
     shutdown_event = threading.Event()

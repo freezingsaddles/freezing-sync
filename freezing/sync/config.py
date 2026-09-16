@@ -63,6 +63,8 @@ class Config:
 
     REQUEUE_DELAY = env("REQUEUE_DELAY", cast=int, default=300)
 
+    ENVIRONMENT = env("ENVIRONMENT", default="development")
+
 
 config = Config()
 
