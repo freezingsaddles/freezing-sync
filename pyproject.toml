@@ -17,7 +17,7 @@ dependencies = [
     "PyMySQL==1.1.2",
     "SQLAlchemy==2.0.49",
     "colorlog==6.10.1",
-    "datadog==0.52.1",
+    "datadog==0.53.0",
     "envparse==0.2.0",
     "freezing-model @ https://github.com/freezingsaddles/freezing-model/archive/0.12.9.tar.gz",
     "greenstalk==2.1.1",
