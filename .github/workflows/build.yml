@@ -5,7 +5,7 @@ on: pull_request  # yamllint disable-line
 
 jobs:
   build:
-    uses: freezingsaddles/freezing-web/.github/workflows/build-docker.yml@1.4.18
+    uses: freezingsaddles/freezing-web/.github/workflows/build-docker.yml@1.6.0
     with:
       tag: latest-actions-build
       repo: freezing-sync
