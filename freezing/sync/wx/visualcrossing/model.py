@@ -11,6 +11,8 @@ class Hour(object):
     apparent_temperature: float
     precip_type: str  # rain,snow
     precip_accumulation: float
+    wind_gust: float
+    wind_speed: float
     source: str  # obs,fcst
 
     def __init__(self, json, date, tz):
@@ -34,6 +36,8 @@ class Hour(object):
             self.precip_type = "rain"  # count ice and sleet as rain
         else:
             self.precip_type = ""
+        self.wind_gust = json.get("windgust", 0.0)
+        self.wind_speed = json.get("windspeed", 0.0)
         self.source = json["source"]
 
 

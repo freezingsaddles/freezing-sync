@@ -8,7 +8,7 @@ from freezing.model import meta
 from freezing.model.orm import Athlete, Ride, RideEffort, RideError, RideGeo, RidePhoto
 from geoalchemy2.elements import WKTElement
 from sqlalchemy import and_, func, text
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import Session, joinedload
 from stravalib import unit_helper
 from stravalib.client import BatchedResultsIterator
 from stravalib.exc import AccessUnauthorized, Fault, ObjectNotFound
@@ -66,13 +66,6 @@ class ActivitySync(BaseSync):
         :param ride: The ride model object.
         """
         # Should apply to both new and preexisting rides ...
-        # If there are multiple instagram photos, then request syncing of non-primary photos too.
-
-        if strava_activity.photo_count > 1 and ride.photos_fetched is None:
-            self.logger.debug(
-                "Scheduling non-primary photos sync for {!r}".format(ride)
-            )
-            ride.photos_fetched = False
 
         ride.name = strava_activity.name
         ride.start_date = strava_activity.start_date_local
@@ -106,7 +99,7 @@ class ActivitySync(BaseSync):
         # is it a detailed activity....
         if hasattr(strava_activity, "description"):
             ride.description = (
-                strava_activity.description[:1024]
+                strava_activity.description[-1024:]
                 if strava_activity.description
                 else None
             )
@@ -131,7 +124,9 @@ class ActivitySync(BaseSync):
         ride.visibility = strava_activity.visibility
 
         ride.commute = strava_activity.commute
-        ride.trainer = strava_activity.trainer
+        ride.ride_type = (
+            strava_activity.sport_type.root if strava_activity.sport_type else None
+        )
 
         elev_gain_quantity = (
             strava_activity.total_elevation_gain.quantity()
@@ -140,6 +135,9 @@ class ActivitySync(BaseSync):
         )
         ride.elevation_gain = int(unit_helper.feet(elev_gain_quantity).magnitude)
         ride.timezone = strava_activity.timezone.timezone().zone
+
+        if ride.photos_fetched is None and strava_activity.total_photo_count:
+            ride.photos_fetched = False
 
         # # Short-circuit things that might result in more obscure db errors later.
         if ride.elapsed_time is None:
@@ -228,42 +226,8 @@ class ActivitySync(BaseSync):
             self.logger.exception("Error adding effort for ride: {0}".format(ride))
             raise
 
-    def _make_photo_from_instagram(
-        self, photo: ActivityPhotoPrimary, ride: Ride
-    ) -> Optional[RidePhoto]:
-        """
-        Writes an instagram primary photo to db.
-
-        :param photo: The primary photo from an activity.
-        :param ride: The db model object for ride.
-        :return: The newly added ride photo object.
-        """
-
-        # Here is when we have an Instagram photo as primary:
-        #  u'photos': {u'count': 1,
-        #   u'primary': {u'id': 106409096,
-        #    u'source': 2,
-        #    u'unique_id': None,
-        #    u'urls': {u'100': u'https://instagram.com/p/88qaqZvrBI/media?size=t',
-        #     u'600': u'https://instagram.com/p/88qaqZvrBI/media?size=l'}},
-        #   u'use_prima ry_photo': False},
-
-        p = RidePhoto()
-        p.id = photo.id
-        p.ref = re.match(r"(.+/)media\?size=.$", photo.urls["100"]).group(1)
-        p.img_l = photo.urls["600"]
-        p.img_t = photo.urls["100"]
-
-        p.ride_id = ride.id
-        p.primary = True
-        p.source = photo.source
-
-        self.logger.debug("Writing (primary) Instagram ride photo: {!r}".format(p))
-
-        return p
-
     def _make_photo_from_native(
-        self, photo: ActivityPhotoPrimary, ride: Ride
+        self, activity_photo: ActivityPhotoPrimary, ride: Ride, session: Session
     ) -> Optional[RidePhoto]:
         """
         Writes a data native (source=1) primary photo to db.
@@ -280,24 +244,33 @@ class ActivitySync(BaseSync):
         #     u'600': u'https://dgtzuqphqg23d.cloudfront.net/Vvm_Mcfk1SP-VWdglQJImBvKzGKRJrHlNN4BqAqD1po-768x576.jpg'}},
         #   u'use_primary_photo': False},
 
-        if not photo.urls:
+        if not activity_photo.urls:
             self.logger.warning(
-                "Photo {} present, but has no URLs (skipping)".format(photo)
+                "Photo {} present, but has no URLs (skipping)".format(activity_photo)
             )
             return None
 
-        p = RidePhoto()
-        p.id = photo.unique_id
-        p.primary = True
-        p.source = photo.source
-        p.ref = None
-        p.img_l = photo.urls["600"]
-        p.img_t = photo.urls["100"]
-        p.ride_id = ride.id
+        photo = session.get(RidePhoto, activity_photo.unique_id)
+        if photo:
+            # keep the existing photo because we may have captions and things from the
+            # secondary photo sync phase.
+            photo.primary = True
+            photo.img_l = photo.img_l or activity_photo.urls["600"]
+        else:
+            photo = RidePhoto()
+            photo.id = activity_photo.unique_id
+            photo.primary = True
+            photo.source = activity_photo.source
+            photo.ref = None
+            photo.caption = None
+            photo.img_l = activity_photo.urls["600"]
+            photo.img_t = activity_photo.urls["100"]
+            photo.ride_id = ride.id
+            session.add(photo)
 
-        self.logger.debug("Creating (primary) native ride photo: {}".format(p))
+            self.logger.debug("Creating (primary) native ride photo: {}".format(photo))
 
-        return p
+        session.flush()
 
     def write_ride_photo_primary(self, strava_activity: DetailedActivity, ride: Ride):
         """
@@ -311,33 +284,28 @@ class ActivitySync(BaseSync):
         """
         session = meta.scoped_session()
 
-        # If we have > 1 instagram photo, then we don't do anything.
-        if strava_activity.photo_count > 1:
-            self.logger.debug(
-                "Ignoring basic sync for {} since there are > 1 instagram photos."
-            )
-            return
+        primary_activity_photo = strava_activity.photos.primary
 
-        # Start by removing any primary photos for this ride.
-        session.execute(
-            RidePhoto.__table__.delete().where(
-                and_(RidePhoto.ride_id == strava_activity.id, RidePhoto.primary == True)
-            )
+        # Start by unprimarying any stale primary photos for this ride. Photo sync will
+        # take care of physically deleting any deleted photos.
+        primary_photos = session.query(RidePhoto).filter_by(
+            ride_id=strava_activity.id, primary=True
         )
+        for primary_photo in primary_photos:
+            if (
+                not primary_activity_photo
+                or primary_activity_photo.unique_id != primary_photo.id
+            ):
+                primary_photo.primary = False
+                session.flush()
 
-        primary_photo = strava_activity.photos.primary
-
-        if primary_photo:
-            if primary_photo.source == 1:
-                p = self._make_photo_from_native(primary_photo, ride)
-            else:
-                p = self._make_photo_from_instagram(primary_photo, ride)
-            session.add(p)
-            session.flush()
+        if primary_activity_photo:
+            self._make_photo_from_native(primary_activity_photo, ride, session)
 
     def sync_rides_detail(
         self,
         athlete_id: int = None,
+        activity_id: int = None,
         rewrite: bool = False,
         max_records: int = None,
         use_cache: bool = True,
@@ -361,6 +329,9 @@ class ActivitySync(BaseSync):
         if athlete_id:
             self.logger.info("Filtering activity details for {}".format(athlete_id))
             q = q.filter(Ride.athlete_id == athlete_id)
+
+        if activity_id:
+            q = q.filter(Ride.id == activity_id)
 
         if max_records:
             self.logger.info("Limiting to {} records".format(max_records))
@@ -428,49 +399,52 @@ class ActivitySync(BaseSync):
                 )
             )
 
+            athlete = session.get(Athlete, athlete_id)
+            if not athlete:
+                self.logger.warning(
+                    "Athlete {} not found in database, ignoring activity {}".format(
+                        athlete_id, activity_id
+                    )
+                )
+                return
+
             try:
-                athlete = session.get(Athlete, athlete_id)
-                if not athlete:
-                    self.logger.warning(
-                        "Athlete {} not found in database, ignoring activity {}".format(
-                            athlete_id, activity_id
-                        )
-                    )
-                    return  # Makes the else a little unnecessary, but reads easier.
-                else:
-                    client = StravaClientForAthlete(athlete)
+                client = StravaClientForAthlete(athlete)
 
-                    af = CachingActivityFetcher(
-                        cache_basedir=config.STRAVA_ACTIVITY_CACHE_DIR, client=client
-                    )
+                af = CachingActivityFetcher(
+                    cache_basedir=config.STRAVA_ACTIVITY_CACHE_DIR, client=client
+                )
 
-                    strava_activity = af.fetch(
-                        athlete_id=athlete_id,
-                        object_id=activity_id,
-                        use_cache=use_cache,
-                    )
+                strava_activity = af.fetch(
+                    athlete_id=athlete_id,
+                    object_id=activity_id,
+                    use_cache=use_cache,
+                )
 
-                    self.check_activity(
-                        strava_activity,
-                        start_date=config.START_DATE,
-                        end_date=config.END_DATE,
-                        exclude_keywords=config.EXCLUDE_KEYWORDS,
-                    )
+                self.check_activity(
+                    strava_activity,
+                    start_date=config.START_DATE,
+                    end_date=config.END_DATE,
+                    exclude_keywords=config.EXCLUDE_KEYWORDS,
+                )
 
-                    self.check_db_overlap(
-                        strava_activity,
-                    )
+                self.check_db_overlap(
+                    strava_activity,
+                )
 
-                    ride = self.write_ride(strava_activity)
-                    self.update_ride_complete(
-                        strava_activity=strava_activity, ride=ride
-                    )
+                ride = self.write_ride(strava_activity)
+                self.update_ride_complete(strava_activity=strava_activity, ride=ride)
             except ObjectNotFound:
                 raise ActivityNotFound(
                     "Activity {} not found, ignoring.".format(activity_id)
                 )
             except IneligibleActivity:
                 raise
+            except AccessUnauthorized:
+                self.logger.error(
+                    "Invalid authorization token for {} (removing)".format(athlete)
+                )
+                athlete.access_token = None
             except Fault as x:
                 self.logger.exception(
                     "Stravalib fault: "
@@ -511,8 +485,8 @@ class ActivitySync(BaseSync):
             )
             raise
         try:
-            self.logger.info("Writing out primary photo for {!r}".format(ride))
-            if strava_activity.total_photo_count > 0 and not ride.private:
+            if strava_activity.total_photo_count and not ride.private:
+                self.logger.info("Writing out primary photo for {!r}".format(ride))
                 self.write_ride_photo_primary(strava_activity, ride)
             else:
                 self.logger.debug("No photos for {!r}".format(ride))
@@ -525,6 +499,12 @@ class ActivitySync(BaseSync):
             )
             raise
         ride.detail_fetched = True
+        # We don't get events when photo descriptions are updated, so instead
+        # every time we fetch the details we schedule a photo fetch. This will
+        # trigger alongside our automatic ride-effort re-sync. We don't gate
+        # this on activity.total_photo_count because if someone deletes their
+        # photos in Strava we probably want to resync and delete our photos.
+        ride.photos_fetched = False
 
     def check_activity(
         self,
@@ -657,7 +637,7 @@ class ActivitySync(BaseSync):
             client = StravaClientForAthlete(athlete)
         except Fault as x:
             self.logger.warning(str(x))
-            return []
+            raise
 
         def is_excluded(activity):
             try:
@@ -676,6 +656,7 @@ class ActivitySync(BaseSync):
         activities = client.get_activities(
             after=start_date, limit=None
         )  # type: BatchedResultsIterator[SummaryActivity]
+
         filtered_rides = [
             a
             for a in activities
@@ -731,82 +712,83 @@ class ActivitySync(BaseSync):
         :rtype: bafs.orm.Ride
         """
         session = meta.scoped_session()
-        if activity.start_latlng:
-            start_geo = WKTElement(
-                wktutils.point_wkt(activity.start_latlng.lon, activity.start_latlng.lat)
-            )
-        else:
-            start_geo = None
-
-        if activity.end_latlng:
-            end_geo = WKTElement(
-                wktutils.point_wkt(activity.end_latlng.lon, activity.end_latlng.lat)
-            )
-        else:
-            end_geo = None
-
-        athlete_id = activity.athlete.id
-
-        # Fail fast for invalid data (this can happen with manual-entry rides)
-        assert activity.elapsed_time is not None
-        assert activity.moving_time is not None
-        assert activity.distance is not None
-
-        # Find the model object for that athlete (or create if doesn't exist)
-        athlete = session.get(Athlete, athlete_id)
-        if not athlete:
-            # The athlete has to exist since otherwise we wouldn't be able to query their rides
-            raise ValueError(
-                "Somehow you are attempting to write rides for an athlete not found in the database."
-            )
-
-        if start_geo is not None or end_geo is not None:
-            ride_geo = RideGeo()
-            ride_geo.start_geo = start_geo
-            ride_geo.end_geo = end_geo
-            ride_geo.ride_id = activity.id
-            session.merge(ride_geo)
-
-        ride = session.get(Ride, activity.id)
-        new_ride = ride is None
-
-        if new_ride:
-            ride = Ride(activity.id)
-
-            # Set the "workflow flags".  These all default to False in the database.  The value of NULL means
-            # that the workflow flag does not apply (e.g. do not bother fetching this)
-
-            ride.detail_fetched = False  # Just to be explicit
-
-            ride.track_fetched = False
-
-            # photo_count refers to instagram photos
-            if activity.photo_count > 1:
-                ride.photos_fetched = False
-            else:
-                ride.photos_fetched = None
-
-            session.add(ride)
-
-        else:
-            # If ride has been cropped, we re-fetch it.
-            if round(ride.distance, 3) != round(
-                unit_helper.miles(activity.distance.quantity()).magnitude, 3
-            ):
-                self.logger.info(
-                    "Queing resync of details for activity {0!r}: "
-                    "distance mismatch ({1} != {2})".format(
-                        activity,
-                        ride.distance,
-                        unit_helper.miles(activity.distance.quantity().magnitude),
+        with session.no_autoflush:
+            if activity.start_latlng:
+                start_geo = WKTElement(
+                    wktutils.point_wkt(
+                        activity.start_latlng.lon, activity.start_latlng.lat
                     )
                 )
-                ride.detail_fetched = False
+            else:
+                start_geo = None
+
+            if activity.end_latlng:
+                end_geo = WKTElement(
+                    wktutils.point_wkt(activity.end_latlng.lon, activity.end_latlng.lat)
+                )
+            else:
+                end_geo = None
+
+            athlete_id = activity.athlete.id
+
+            # Fail fast for invalid data (this can happen with manual-entry rides)
+            assert activity.elapsed_time is not None
+            assert activity.moving_time is not None
+            assert activity.distance is not None
+
+            # Find the model object for that athlete (or create if doesn't exist)
+            athlete = session.get(Athlete, athlete_id)
+            if not athlete:
+                # The athlete has to exist since otherwise we wouldn't be able to query their rides
+                raise ValueError(
+                    "Somehow you are attempting to write rides for an athlete not found in the database."
+                )
+
+            if start_geo is not None or end_geo is not None:
+                ride_geo = RideGeo()
+                ride_geo.start_geo = start_geo
+                ride_geo.end_geo = end_geo
+                ride_geo.ride_id = activity.id
+                session.merge(ride_geo)
+
+            ride = session.get(Ride, activity.id)
+            new_ride = ride is None
+
+            if new_ride:
+                ride = Ride(activity.id)
+
+                # Set the "workflow flags".  These all default to False in the database.  The value of NULL means
+                # that the workflow flag does not apply (e.g. do not bother fetching this)
+
+                ride.detail_fetched = False  # Just to be explicit
+
                 ride.track_fetched = False
 
-        ride.athlete = athlete
+                # update_ride_basic will do this anyway
+                if activity.total_photo_count > 0:
+                    ride.photos_fetched = False
 
-        self.update_ride_basic(strava_activity=activity, ride=ride)
+                session.add(ride)
+
+            else:
+                # If ride has been cropped, we re-fetch it.
+                if round(ride.distance, 3) != round(
+                    unit_helper.miles(activity.distance.quantity()).magnitude, 3
+                ):
+                    self.logger.info(
+                        "Queing resync of details for activity {0!r}: "
+                        "distance mismatch ({1} != {2})".format(
+                            activity,
+                            ride.distance,
+                            unit_helper.miles(activity.distance.quantity().magnitude),
+                        )
+                    )
+                    ride.detail_fetched = False
+                    ride.track_fetched = False
+
+            ride.athlete = athlete
+
+            self.update_ride_basic(strava_activity=activity, ride=ride)
 
         if new_ride:
             statsd.histogram("strava.activity.distance", ride.distance)
@@ -834,7 +816,8 @@ class ActivitySync(BaseSync):
 
         # Quickly filter out only the rides that are not in the database.
         returned_ride_ids = set([r.id for r in api_ride_entries])
-        stored_ride_ids = set([r.id for r in db_rides])
+        db_rides_by_id = {r.id: r for r in db_rides}
+        stored_ride_ids = set(db_rides_by_id.keys())
         # new_ride_ids = list(returned_ride_ids - stored_ride_ids)
         removed_ride_ids = list(stored_ride_ids - returned_ride_ids)
 
@@ -921,14 +904,31 @@ class ActivitySync(BaseSync):
                         ride_ids_needing_streams.append(ride.id)
 
             else:
-                self.logger.debug(
-                    "[SKIPPED EXISTING]: {id} {name!r} ({i}/{num}) ".format(
-                        id=strava_activity.id,
-                        name=strava_activity.name,
-                        i=i + 1,
-                        num=num_rides,
-                    )
+                ride = db_rides_by_id[strava_activity.id]
+                strava_miles = round(
+                    unit_helper.miles(strava_activity.distance.quantity()).magnitude, 3
                 )
+                if round(ride.distance, 3) != strava_miles:
+                    self.logger.info(
+                        "[DISTANCE CHANGED]: {id} {name!r} stored={stored} strava={strava}".format(
+                            id=strava_activity.id,
+                            name=strava_activity.name,
+                            stored=ride.distance,
+                            strava=strava_miles,
+                        )
+                    )
+                    ride.track_fetched = False
+                    ride.detail_fetched = False
+                    sess.commit()
+                else:
+                    self.logger.debug(
+                        "[SKIPPED EXISTING]: {id} {name!r} ({i}/{num}) ".format(
+                            id=strava_activity.id,
+                            name=strava_activity.name,
+                            i=i + 1,
+                            num=num_rides,
+                        )
+                    )
 
         # Remove any rides that are in the database for this athlete that were not in the returned list.
         if removed_ride_ids:
@@ -989,6 +989,9 @@ class ActivitySync(BaseSync):
 
             if end_date is None:
                 end_date = config.END_DATE
+
+            if start_date > arrow.now():
+                return
 
             self.logger.debug(
                 "Fetching rides newer than {} and older than {}".format(

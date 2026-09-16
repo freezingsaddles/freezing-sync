@@ -10,7 +10,7 @@ class SyncWeatherScript(BaseCommand):
 
     name = "sync-weather"
 
-    description = "Sync wunderground.com weather data."
+    description = "Sync weather data."
 
     def build_parser(self):
         parser = super().build_parser()

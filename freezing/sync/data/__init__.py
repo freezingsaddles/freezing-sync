@@ -40,7 +40,7 @@ class StravaClientForAthlete(Client):
         assert athlete, "No athlete ID or Athlete object provided."
         if athlete.refresh_token is not None:
             an_hour_from_now = time.time() + 60 * 60
-            if athlete.expires_at < an_hour_from_now:
+            if athlete.access_token is None or athlete.expires_at < an_hour_from_now:
                 refresh_token = athlete.refresh_token
                 self.logger.info(
                     "access token for athlete %s is stale, expires_at=%s",
