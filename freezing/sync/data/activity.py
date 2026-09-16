@@ -124,7 +124,9 @@ class ActivitySync(BaseSync):
         ride.visibility = strava_activity.visibility
 
         ride.commute = strava_activity.commute
-        ride.ride_type = strava_activity.type
+        ride.ride_type = (
+            strava_activity.sport_type.root if strava_activity.sport_type else None
+        )
 
         elev_gain_quantity = (
             strava_activity.total_elevation_gain.quantity()
@@ -710,80 +712,83 @@ class ActivitySync(BaseSync):
         :rtype: bafs.orm.Ride
         """
         session = meta.scoped_session()
-        if activity.start_latlng:
-            start_geo = WKTElement(
-                wktutils.point_wkt(activity.start_latlng.lon, activity.start_latlng.lat)
-            )
-        else:
-            start_geo = None
-
-        if activity.end_latlng:
-            end_geo = WKTElement(
-                wktutils.point_wkt(activity.end_latlng.lon, activity.end_latlng.lat)
-            )
-        else:
-            end_geo = None
-
-        athlete_id = activity.athlete.id
-
-        # Fail fast for invalid data (this can happen with manual-entry rides)
-        assert activity.elapsed_time is not None
-        assert activity.moving_time is not None
-        assert activity.distance is not None
-
-        # Find the model object for that athlete (or create if doesn't exist)
-        athlete = session.get(Athlete, athlete_id)
-        if not athlete:
-            # The athlete has to exist since otherwise we wouldn't be able to query their rides
-            raise ValueError(
-                "Somehow you are attempting to write rides for an athlete not found in the database."
-            )
-
-        if start_geo is not None or end_geo is not None:
-            ride_geo = RideGeo()
-            ride_geo.start_geo = start_geo
-            ride_geo.end_geo = end_geo
-            ride_geo.ride_id = activity.id
-            session.merge(ride_geo)
-
-        ride = session.get(Ride, activity.id)
-        new_ride = ride is None
-
-        if new_ride:
-            ride = Ride(activity.id)
-
-            # Set the "workflow flags".  These all default to False in the database.  The value of NULL means
-            # that the workflow flag does not apply (e.g. do not bother fetching this)
-
-            ride.detail_fetched = False  # Just to be explicit
-
-            ride.track_fetched = False
-
-            # update_ride_basic will do this anyway
-            if activity.total_photo_count > 0:
-                ride.photos_fetched = False
-
-            session.add(ride)
-
-        else:
-            # If ride has been cropped, we re-fetch it.
-            if round(ride.distance, 3) != round(
-                unit_helper.miles(activity.distance.quantity()).magnitude, 3
-            ):
-                self.logger.info(
-                    "Queing resync of details for activity {0!r}: "
-                    "distance mismatch ({1} != {2})".format(
-                        activity,
-                        ride.distance,
-                        unit_helper.miles(activity.distance.quantity().magnitude),
+        with session.no_autoflush:
+            if activity.start_latlng:
+                start_geo = WKTElement(
+                    wktutils.point_wkt(
+                        activity.start_latlng.lon, activity.start_latlng.lat
                     )
                 )
-                ride.detail_fetched = False
+            else:
+                start_geo = None
+
+            if activity.end_latlng:
+                end_geo = WKTElement(
+                    wktutils.point_wkt(activity.end_latlng.lon, activity.end_latlng.lat)
+                )
+            else:
+                end_geo = None
+
+            athlete_id = activity.athlete.id
+
+            # Fail fast for invalid data (this can happen with manual-entry rides)
+            assert activity.elapsed_time is not None
+            assert activity.moving_time is not None
+            assert activity.distance is not None
+
+            # Find the model object for that athlete (or create if doesn't exist)
+            athlete = session.get(Athlete, athlete_id)
+            if not athlete:
+                # The athlete has to exist since otherwise we wouldn't be able to query their rides
+                raise ValueError(
+                    "Somehow you are attempting to write rides for an athlete not found in the database."
+                )
+
+            if start_geo is not None or end_geo is not None:
+                ride_geo = RideGeo()
+                ride_geo.start_geo = start_geo
+                ride_geo.end_geo = end_geo
+                ride_geo.ride_id = activity.id
+                session.merge(ride_geo)
+
+            ride = session.get(Ride, activity.id)
+            new_ride = ride is None
+
+            if new_ride:
+                ride = Ride(activity.id)
+
+                # Set the "workflow flags".  These all default to False in the database.  The value of NULL means
+                # that the workflow flag does not apply (e.g. do not bother fetching this)
+
+                ride.detail_fetched = False  # Just to be explicit
+
                 ride.track_fetched = False
 
-        ride.athlete = athlete
+                # update_ride_basic will do this anyway
+                if activity.total_photo_count > 0:
+                    ride.photos_fetched = False
 
-        self.update_ride_basic(strava_activity=activity, ride=ride)
+                session.add(ride)
+
+            else:
+                # If ride has been cropped, we re-fetch it.
+                if round(ride.distance, 3) != round(
+                    unit_helper.miles(activity.distance.quantity()).magnitude, 3
+                ):
+                    self.logger.info(
+                        "Queing resync of details for activity {0!r}: "
+                        "distance mismatch ({1} != {2})".format(
+                            activity,
+                            ride.distance,
+                            unit_helper.miles(activity.distance.quantity().magnitude),
+                        )
+                    )
+                    ride.detail_fetched = False
+                    ride.track_fetched = False
+
+            ride.athlete = athlete
+
+            self.update_ride_basic(strava_activity=activity, ride=ride)
 
         if new_ride:
             statsd.histogram("strava.activity.distance", ride.distance)
@@ -811,7 +816,8 @@ class ActivitySync(BaseSync):
 
         # Quickly filter out only the rides that are not in the database.
         returned_ride_ids = set([r.id for r in api_ride_entries])
-        stored_ride_ids = set([r.id for r in db_rides])
+        db_rides_by_id = {r.id: r for r in db_rides}
+        stored_ride_ids = set(db_rides_by_id.keys())
         # new_ride_ids = list(returned_ride_ids - stored_ride_ids)
         removed_ride_ids = list(stored_ride_ids - returned_ride_ids)
 
@@ -898,14 +904,31 @@ class ActivitySync(BaseSync):
                         ride_ids_needing_streams.append(ride.id)
 
             else:
-                self.logger.debug(
-                    "[SKIPPED EXISTING]: {id} {name!r} ({i}/{num}) ".format(
-                        id=strava_activity.id,
-                        name=strava_activity.name,
-                        i=i + 1,
-                        num=num_rides,
-                    )
+                ride = db_rides_by_id[strava_activity.id]
+                strava_miles = round(
+                    unit_helper.miles(strava_activity.distance.quantity()).magnitude, 3
                 )
+                if round(ride.distance, 3) != strava_miles:
+                    self.logger.info(
+                        "[DISTANCE CHANGED]: {id} {name!r} stored={stored} strava={strava}".format(
+                            id=strava_activity.id,
+                            name=strava_activity.name,
+                            stored=ride.distance,
+                            strava=strava_miles,
+                        )
+                    )
+                    ride.track_fetched = False
+                    ride.detail_fetched = False
+                    sess.commit()
+                else:
+                    self.logger.debug(
+                        "[SKIPPED EXISTING]: {id} {name!r} ({i}/{num}) ".format(
+                            id=strava_activity.id,
+                            name=strava_activity.name,
+                            i=i + 1,
+                            num=num_rides,
+                        )
+                    )
 
         # Remove any rides that are in the database for this athlete that were not in the returned list.
         if removed_ride_ids:
