@@ -46,16 +46,14 @@ class WeatherSync(BaseSync):
         # We only look at rides that ended over an hour ago, so we know there is weather observation rather than
         # forecast, and we have to care that now() is in system timezone.
         sess.query(orm.RideWeather)
-        q = text(
-            """
+        q = text("""
             select R.id, ST_AsText(G.start_geo) AS start_geo from rides R
             join ride_geo G on G.ride_id = R.id
             left join ride_weather W on W.ride_id = R.id
             where W.ride_id is null
             and date_add(CONVERT_TZ(R.start_date, R.timezone, 'SYSTEM'), INTERVAL R.elapsed_time SECOND) < (NOW() - INTERVAL 1 HOUR)
             ;
-            """
-        )
+            """)
 
         visual_crossing = HistoVisualCrossing(
             api_key=config.VISUAL_CROSSING_API_KEY,
