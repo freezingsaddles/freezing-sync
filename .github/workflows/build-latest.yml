@@ -24,7 +24,7 @@ jobs:
     steps:
 
     - name: install
-      uses: appleboy/ssh-action@v1.1.0
+      uses: appleboy/ssh-action@v1.2.5
       with:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USERNAME }}
