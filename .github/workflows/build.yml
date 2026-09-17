@@ -3,10 +3,15 @@ name: Build
 
 on: pull_request  # yamllint disable-line
 
+permissions:
+  contents: read
+
 jobs:
   build:
-    uses: freezingsaddles/freezing-web/.github/workflows/build-docker.yml@1.6.0
+    permissions:
+      contents: read
+    uses: freezingsaddles/freezing-web/.github/workflows/build-docker.yml@fc57041b2a1f991b8d8dcf7ed4a7bd03a56bc4e3 # 1.7.0
     with:
       tag: latest-actions-build
       repo: freezing-sync
-    secrets: inherit
+      push: false
