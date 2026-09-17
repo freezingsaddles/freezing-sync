@@ -47,3 +47,4 @@ jobs:
           cd /opt/compose
           docker compose pull freezing-sync
           docker compose up -d freezing-sync
+          docker image prune -f
