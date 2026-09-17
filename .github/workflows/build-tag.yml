@@ -13,7 +13,7 @@ jobs:
   build:
     permissions:
       contents: read
-    uses: freezingsaddles/freezing-web/.github/workflows/build-docker.yml@188155b3d3466278116cafb2a3b3c1c2c4773613 # harden-workflows, pending 1.7.0
+    uses: freezingsaddles/freezing-web/.github/workflows/build-docker.yml@fc57041b2a1f991b8d8dcf7ed4a7bd03a56bc4e3 # 1.7.0
     with:
       tag: ${{ github.ref_name }}
       repo: freezing-sync
